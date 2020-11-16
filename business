@@ -1,0 +1,19 @@
+from[CSTC_TestReq2TestMethod].to.name=='Chem_Deformulation_1'  //
+from[CSTC_TestReq2TestMethod].to.name ~~ \'*_VIEW_*\'
+
+
+${COMMON_DIR}/emxTable.jsp?inquiry=CSTC_TestReqChemical2TestResultWhole_List
+&table=CSTC_TestReqChemical2TestResultWhole_List
+&toolbar=CSTC_TestReqChemical2TestResultWhole_List_Toolbar
+&header=Deformulation
+&sortColumnName=
+&selection=multiple
+&editLink=false
+
+edit =>comand 
+(attribute[CSTC_TestReq_TestEngineer]==context.user && current=='Work' && attribute[CSTC_TestReq_FlagWorkComplete]!='Y')
+${COMMON_DIR}/emxTableEdit.jsp?inquiry=CSTC_TestReqChemical2TestResultWhole_List
+&table=CSTC_TestReqChemical2TestResultWhole_List&header=Deformation
+&sortColumnName=&postProcessJPO=CSTC_Utility:updateEditTableValue
+&paraAttributeName=CSTC_TestReq_Chemical_RubberType|CSTC_TestReq_Remark|CSTC_TestReq_Specific_Gravity|CSTC_TestReq_Chemical_InsolubleInHCL_CaCO3|CSTC_TestReq_Chemical_Proportion|CSTC_TestReq_Chemical_Content_Percent|CSTC_TestReq_Chemical_Content_PHR|CSTC_TestReq_Chemical_Extraction_OilWax|CSTC_TestReq_Chemical_ELSE|CSTC_TestReq_Chemical_Carbonblack|CSTC_TestReq_Chemical_Ash|CSTC_TestReq_Chemical_S|CSTC_TestReq_Chemical_SolubleInHCL_ZnO|CSTC_TestReq_Chemical_SolubleInHCL_Co|CSTC_TestReq_Chemical_SolubleInHCL_Else|CSTC_TestReq_Chemical_InsolubleInHCL_SiO2|CSTC_TestReq_Chemical_Li|CSTC_TestReq_Chemical_Tg
+&editToolbar=CSTC_TestResultWhole_Chemical_Toolbar
