@@ -1,0 +1,2056 @@
+import java.math.BigDecimal;
+import java.util.HashMap;
+import java.util.Map;
+
+import matrix.db.Context;
+import matrix.db.JPO;
+import matrix.util.StringList;
+
+import com.matrixone.apps.domain.DomainConstants;
+import com.matrixone.apps.domain.DomainObject;
+import com.matrixone.apps.domain.DomainRelationship;
+import com.matrixone.apps.domain.util.MapList;
+import com.matrixone.apps.domain.util.PersonUtil;
+import com.matrixone.apps.domain.util.PropertyUtil;
+import com.matrixone.apps.framework.ui.UIUtil;
+import com.sti.flow.utility.STILogger;
+
+import java.text.DecimalFormat;
+import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.Calendar;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Vector;
+import java.util.concurrent.TimeUnit;
+
+import matrix.db.Context;
+import matrix.db.JPO;
+import matrix.db.RelationshipType;
+import matrix.util.StringList;
+
+import com.matrixone.apps.common.Department;
+import com.matrixone.apps.domain.DomainConstants;
+import com.matrixone.apps.domain.DomainObject;
+import com.matrixone.apps.domain.DomainRelationship;
+import com.matrixone.apps.domain.util.ContextUtil;
+import com.matrixone.apps.domain.util.EnoviaResourceBundle;
+import com.matrixone.apps.domain.util.FrameworkException;
+import com.matrixone.apps.domain.util.FrameworkUtil;
+import com.matrixone.apps.domain.util.MapList;
+import com.matrixone.apps.domain.util.MqlUtil;
+import com.matrixone.apps.domain.util.PersonUtil;
+import com.matrixone.apps.domain.util.PropertyUtil;
+import com.matrixone.apps.domain.util.eMatrixDateFormat;
+import com.matrixone.apps.domain.util.i18nNow;
+import com.matrixone.apps.framework.ui.UIUtil;
+import com.matrixone.apps.program.ProgramCentralConstants;
+import com.sti.flow.context.FlowContext;
+import com.sti.flow.matrix.MxRelationConstants;
+import com.sti.flow.matrix.context.MxFlowContext;
+import com.sti.flow.matrix.dao.MxSerialNumberGeneratorDao;
+import com.sti.flow.matrix.program.MxProgramConstants;
+import com.sti.flow.utility.STILogger;
+
+public class ${CLASSNAME} extends ${CLASS:CST_Company} {
+	private STILogger log = STILogger.getLogger( ${CLASS:CSTC_Report}.class );
+	
+	/*define relationship */
+	final private String REL_CSTC_Project2TestReq = PropertyUtil.getSchemaProperty("relationship_CSTC_Project2TestReq") ;
+	final private String REL_CSTC_TestReq2TestResult = PropertyUtil.getSchemaProperty("relationship_CSTC_TestReq2TestResult");
+	final private String REL_CSTC_TestTire2TestResult = PropertyUtil.getSchemaProperty("relationship_CSTC_TestTire2TestResult");
+	final private String REL_CSTC_TestPart2TestResult = PropertyUtil.getSchemaProperty("relationship_CSTC_TestPart2TestResult");
+	final private String REL_CSTC_TestReq2TestMethod = PropertyUtil.getSchemaProperty("relationship_CSTC_TestReq2TestMethod");
+	final private String REL_CSTC_TestMethod2TestResult = PropertyUtil.getSchemaProperty("relationship_CSTC_TestMethod2TestResult");
+	
+	public ${CLASSNAME}() {
+	}
+	public ${CLASSNAME}(Context context, String[] args) throws Exception {
+	}
+	/**
+	 * Create CSTC_TestReq_Chemical post process
+	 * @param context
+	 * @param args
+	 * @throws Exception
+	 */
+	public void createTestReqPostProcessForChemical(Context context, String[] args) throws Exception{
+		try{
+		//get para
+			HashMap programMap         = (HashMap) JPO.unpackArgs(args);
+			Map paramMap               = (Map) programMap.get("paramMap");
+			Map requestMap             = (Map) programMap.get("requestMap");
+			//System.out.println("programMap = "+programMap.toString());
+			//System.out.println("paramMap = "+paramMap.toString());
+			//System.out.println("requestMap = "+requestMap.toString());
+			
+		
+			
+		//set para
+			String testReqId = (String)paramMap.get("newObjectId");
+			//System.out.println("testReqId = "+testReqId);
+			String strObjectId = (String)paramMap.get("objectId");
+			String strPrjId = ${CLASS:CSTC_Utility}.chkStr( (String)requestMap.get("CSTC_TestReq_PrjNmOID") );
+			
+			
+		//testReq info
+			DomainObject testReqObj = new DomainObject( testReqId );
+			String strRequestFrom = testReqObj.getAttributeValue(context, "CSTC_TestReq_RequestFrom");
+			String strProjectNm = testReqObj.getAttributeValue(context, "CSTC_TestReq_PrjNm");
+	        String strSite = testReqObj.getAttributeValue(context,"CSTC_TestReq_RequestSite");
+	        String strTestSite = testReqObj.getAttributeValue(context,"CSTC_TestReq_TestSite");
+			String strDeptId = testReqObj.getAttributeValue(context,"CSTC_TestReq_DeptId");
+			String strProjectEngineer = testReqObj.getAttributeValue(context,"Originator");
+			//String strOzoneResistance = testReqObj.getAttributeValue(context,"CSTC_TestReq_TirePhy_OzoneResistance");
+			//System.out.println("strOzoneResistance = "+strOzoneResistance);
+			
+		/*set policy*/
+			testReqObj.setPolicy(context, "CSTC_TestReq");		
+			
+        /*Check Request From*/
+            if(!(strSite.equals(strTestSite))){
+                throw new FrameworkException("Request site must be same as Test Site!");
+            }
+			if(strRequestFrom.equals("Project")){
+				if(UIUtil.isNullOrEmpty(strProjectNm)){
+					throw new FrameworkException( " If Request From is Project, Project can not be empty.");
+				}
+			}else if(strRequestFrom.equals("Other")){
+				if(!(UIUtil.isNullOrEmpty(strProjectNm))){
+					throw new FrameworkException( " If Request From is Other, Project must be empty.");
+				}
+			}
+			
+		/*create relationship from Project to TestReq_TirePhy*/
+			if(strRequestFrom.equals("Project")){
+				ContextUtil.pushContext(context);
+				testReqObj.addFromObject(context, new RelationshipType( REL_CSTC_Project2TestReq ), strPrjId);
+				ContextUtil.popContext(context);
+			}	
+				
+		//CSTC_TestReq_Topic ,CSTC_TestReq_Sample_Infor for CST
+			if(strSite.equals("CST")){
+			 String strTopic = testReqObj.getAttributeValue(context, "CSTC_TestReq_Topic");
+			 String strSampleInfor = testReqObj.getAttributeValue(context, "CSTC_TestReq_Sample_Infor");
+				if((UIUtil.isNullOrEmpty(strTopic))||(UIUtil.isNullOrEmpty(strSampleInfor))){
+					throw new FrameworkException("Topic,Sample Infor can not be empty!");
+				}
+			}
+		/*Serial No*/
+		//get date
+			Date d = new Date();    
+	        SimpleDateFormat sdf = new SimpleDateFormat("yyMMdd");  
+	        String dateNowStr = sdf.format(d);
+			MxSerialNumberGeneratorDao snDao = new MxSerialNumberGeneratorDao();
+			FlowContext flowContext = new MxFlowContext(context);
+			String strPrefix =strSite +"-"+ strDeptId + "-" + dateNowStr;
+			String serNo = snDao.getSerialNoByKey( flowContext , strPrefix , strPrefix , strPrefix, true );
+			serNo = String.format("%03d", Integer.parseInt(serNo));
+			testReqObj.setName( context , strPrefix+"-"+serNo );
+			
+		
+		/*Set TestItem TestMethod*/
+			String strTestItem = testReqObj.getAttributeValue(context, "CSTC_TestReq_TestItem");
+			String strTestMethod = testReqObj.getAttributeValue(context, "CSTC_TestReq_TestMethod");
+			String[] strTestItemDisplay = strTestItem.split("\\|");
+			//Phy_DMA1000_1,Phy_DIN_1
+			String strTestItemDisplay0 = strTestItemDisplay[0];
+			
+			//DMA1000,DIN
+			String strTestItemDisplay1 = strTestItemDisplay[1];
+			
+			//System.out.println("***bobo***");
+			testReqObj.setAttributeValue(context, "CSTC_TestReq_TestItem",strTestItemDisplay[1] );
+			testReqObj.setAttributeValue(context, "CSTC_TestReq_TestMethod",strTestItemDisplay[0] );
+
+		/*create relationship from TestReq_Chemical to TestMethod*/
+			String[] strTestItemName = strTestItemDisplay0.split(",");
+			for(int j=0;j<strTestItemName.length;j++){
+				//System.out.println("strTestItemName = "+strTestItemName[j]);
+				StringList busSel = new StringList();
+			    busSel.addElement( DomainObject.SELECT_ID );
+				String whereStr=" name == '"+ strTestItemName[j] +"' ";
+				MapList dataList  = DomainObject.findObjects(context, "CSTC_TestMethod_Chemical" , "*", whereStr , busSel);
+				System.out.println("dataList = " + dataList.toString());
+				/*System.out.println("programMap = "+programMap.toString());
+				System.out.println("paramMap = "+paramMap.toString());
+				System.out.println("requestMap = "+requestMap.toString());*/
+				for(int i = 0 ;i < 1; i++){
+					Map MethodInfo = (Map)dataList.get(0);
+					String MethodId = (String)MethodInfo.get("id");
+					testReqObj.addToObject(context, new RelationshipType( REL_CSTC_TestReq2TestMethod ), MethodId);
+				}
+			
+			}
+
+			
+			testReqObj.setAttributeValue(context, "CSTC_TestReq_TestType", "Chemical");
+
+
+			if(strTestSite.equals("CST")){
+				testReqObj.setAttributeValue(context, "CSTC_TestReq_TestEngineer", "Test Everything");
+			}else{
+				testReqObj.setAttributeValue(context, "CSTC_TestReq_TestEngineer", "cstc_che1");
+			}
+
+			
+			
+			
+
+
+			testReqObj.setAttributeValue(context, "CSTC_TestReq_SiteDept", strSite+"_"+strDeptId);	
+			testReqObj.setAttributeValue(context, "CSTC_TestReq_PE", strProjectEngineer);	
+			
+		}catch(Exception  e) {
+			throw new FrameworkException(e.toString());
+		}
+		
+		
+	}
+
+	/**
+	 * Edit CSTC_TestReq_Chemical post process
+	 * @param context
+	 * @param args
+	 * @throws Exception
+	 */
+	public void editTestReqPostProcessForChemical(Context context, String[] args) throws Exception{
+		try{
+			
+		//get para
+			HashMap programMap         = (HashMap) JPO.unpackArgs(args);
+			Map paramMap               = (Map) programMap.get("paramMap");
+			Map requestMap             = (Map) programMap.get("requestMap");
+			//System.out.println("programMap = "+programMap.toString());
+			//System.out.println("paramMap = "+paramMap.toString());
+			//System.out.println("requestMap = "+requestMap.toString());	
+			
+		//set para
+			String strNewTestMethodId ="";
+			String testReqId = (String) requestMap.get("objectId");
+			String strTestItemfieldValue = (String) requestMap.get("CSTC_TestReq_TestItemfieldValue");
+			String strDisplay = (String) requestMap.get("CSTC_TestReq_TestItemDisplay");
+			
+			//System.out.println("strTestItemfieldValue = "+strTestItemfieldValue);
+			//System.out.println("strTestItemfieldValue = "+strDisplay);
+		//testReq info
+			DomainObject testReqObj = new DomainObject( testReqId );
+			String strRequestSite = testReqObj.getAttributeValue(context, "CSTC_TestReq_RequestSite");
+			String strTestSite = testReqObj.getAttributeValue(context, "CSTC_TestReq_TestSite");
+			String strRequestFrom = testReqObj.getAttributeValue(context, "CSTC_TestReq_RequestFrom");
+			String strProjectNm = testReqObj.getAttributeValue(context, "CSTC_TestReq_PrjNm");
+			//System.out.println("testReqObj = "+testReqObj.toString());
+			//System.out.println("strTestSite = "+strTestSite.toString());
+			//System.out.println("strRequestFrom = "+strRequestFrom.toString());
+			
+		//project info
+			String strOldPrjId = (String) ${CLASS:CSTC_Utility}.chkStr(testReqObj.getInfo(context, "to[CSTC_Project2TestReq].from.id"));
+			String strNewPrjId = (String)requestMap.get("CSTC_TestReq_PrjNmOID");
+			String strOldPrjRelId = (String) ${CLASS:CSTC_Utility}.chkStr(testReqObj.getInfo(context, "to[CSTC_Project2TestReq].id"));
+			if(UIUtil.isNullOrEmpty(strNewPrjId)&&UIUtil.isNotNullAndNotEmpty(strOldPrjId)){strNewPrjId = strOldPrjId;}
+			//System.out.println("strOldPrjId = "+strOldPrjId.toString());
+			//System.out.println("strNewPrjId = "+strNewPrjId.toString());
+			//System.out.println("strOldPrjRelId = "+strOldPrjRelId.toString());
+			
+		//deal project connect
+			if(strRequestFrom.equals("Project")){
+				if(!strOldPrjId.equals(strNewPrjId)){
+					if(UIUtil.isNullOrEmpty(strOldPrjId)){
+						testReqObj.addFromObject(context,  new RelationshipType( REL_CSTC_Project2TestReq ), strNewPrjId);	
+					}else{
+						DomainRelationship.disconnect(context, strOldPrjRelId);
+						testReqObj.addFromObject(context,  new RelationshipType( REL_CSTC_Project2TestReq ), strNewPrjId);
+					}
+				}
+			}else if(strRequestFrom.equals("Other")){
+				if(!UIUtil.isNullOrEmpty(strNewPrjId)){
+					DomainRelationship.disconnect(context, strOldPrjRelId);
+				}
+				
+			}
+			
+			//System.out.println("*bobo*");
+			
+		//CSTC_TestReq_Topic,CSTC_TestReq_Sample_Info cann not be empty
+			if(strRequestSite.equals("CST")){
+			 String strTopic = testReqObj.getAttributeValue(context, "CSTC_TestReq_Topic");
+			 String strSampleInfor = testReqObj.getAttributeValue(context, "CSTC_TestReq_Sample_Infor");
+				if((UIUtil.isNullOrEmpty(strTopic))||(UIUtil.isNullOrEmpty(strSampleInfor))){
+					throw new FrameworkException("Topic,Sample Infor  can not be empty!");
+				}
+			}
+			
+			/*Check Request site*/
+            if(!(strRequestSite.equals(strTestSite))){
+                throw new FrameworkException("Request site must be same as Test Site!");
+            }
+		//deal No(if DeptId changed or Site changed)
+			String OldNm = testReqObj.getName(context);
+			String strNewDeptId = testReqObj.getAttributeValue(context, "CSTC_TestReq_DeptId");
+			String strNewSite  = testReqObj.getAttributeValue(context, "CSTC_TestReq_RequestSite");
+			String[] sourceStrArray = OldNm.split("-");
+			testReqObj.setName(context, strNewSite+"-"+strNewDeptId+"-"+sourceStrArray[2]+"-"+sourceStrArray[3]);
+			//System.out.println("strNewDeptId = "+strNewDeptId.toString());
+			testReqObj.setAttributeValue(context, "CSTC_TestReq_SiteDept", strNewSite+"_"+strNewDeptId);	
+
+		//method info
+			if(!strTestItemfieldValue.equals(strDisplay)){
+			String strNewTestMethodValue = (String)paramMap.get("CSTC_TestReq_TestItem");
+			String strOldTestMethodValue = (String)testReqObj.getAttributeValue(context, "CSTC_TestReq_TestMethod");
+			StringList strOldTestMethodRelId = testReqObj.getInfoList(context, "from[CSTC_TestReq2TestMethod].id");
+			String strNewTestItem = testReqObj.getAttributeValue(context, "CSTC_TestReq_TestItem");
+			String[] strNewTestItemDisplay = strNewTestItem.split("\\|");
+			String strNewTestItemDisplay0 = strNewTestItemDisplay[0];
+			String strNewTestItemDisplay1 = strNewTestItemDisplay[1];
+			String[] strNewTestItemName = strNewTestItemDisplay0.split(",");
+			String[] strNewTestMethodValueArr = strNewTestItemDisplay1.split(",");
+			//System.out.println("strNewTestItemDisplay1 = "+strNewTestItemDisplay1);
+			
+		//deal testItem testMethod
+				for(int i=0;i<strOldTestMethodRelId.size();i++){
+					DomainRelationship.disconnect(context, (String)strOldTestMethodRelId.get(i));
+				}
+				for(int j=0;j<strNewTestItemName.length;j++){
+				//get strNewTestMethodId
+					StringList busSel1 = new StringList();
+				    busSel1.addElement( DomainObject.SELECT_ID );
+					String whereStr1=" name == '"+ strNewTestItemName[j] +"' ";
+					MapList dataList1  = DomainObject.findObjects(context, "CSTC_TestMethod_Chemical" , "*", whereStr1 , busSel1);
+					for(int m = 0 ;m < dataList1.size(); m++){
+						Map MethodInfo2 = (Map)dataList1.get(m);
+						strNewTestMethodId = (String)MethodInfo2.get("id");
+						//System.out.println("strNewTestMethodId = "+strNewTestMethodId);
+						testReqObj.addToObject(context, new RelationshipType( REL_CSTC_TestReq2TestMethod ), strNewTestMethodId);
+						testReqObj.setAttributeValue(context, "CSTC_TestReq_TestItem",strNewTestItemDisplay1 );
+						testReqObj.setAttributeValue(context, "CSTC_TestReq_TestMethod",strNewTestItemDisplay0 );
+					}
+				 }
+			}
+		
+		
+		}catch(Exception  e) {
+			throw new FrameworkException(e.toString());
+		}
+	}
+	
+	
+	/**
+	 * Display Project Name 
+	 * @param context
+	 * @param args
+	 * @throws Exception
+	 */
+	public String DisplayProjectNm(Context context,String[] args)throws Exception{
+		HashMap programMap         = (HashMap) JPO.unpackArgs(args);
+		Map paramMap               = (Map) programMap.get("paramMap");
+		Map requestMap             = (Map) programMap.get("requestMap");
+		String strObjectId = (String) paramMap.get("objectId");   
+		DomainObject cTestReqObj = new DomainObject( strObjectId );
+	/*project id*/
+		ContextUtil.pushContext(context);
+		String projectId = cTestReqObj.getInfo(context, "to[CSTC_Project2TestReq].from.id");
+		ContextUtil.popContext(context);
+		String strProjectNm = cTestReqObj.getAttributeValue(context, "CSTC_TestReq_PrjNm");
+		String hyperlink = "../common/emxTree.jsp?objectId=" + projectId;
+		String DisPlayProjectNm = "<a href=\"JavaScript:emxFormLinkClick('" + hyperlink + "'," + "'_blank', '', '800',  '600')\" class=\"object\">" + strProjectNm + "</a>";
+		return DisPlayProjectNm;
+
+	}
+	
+	
+	/**
+	 * Create CSTC_TestReq_Chemical Result 
+	 * @param context
+	 * @param args
+	 * @throws Exception
+	 */
+	
+	public void createResultByTestMethod(Context context, String[] args) throws Exception {
+		HashMap argsMap = (HashMap) JPO.unpackArgs(args);
+		String TestReqChemicalId = (String) argsMap.get( MxProgramConstants.FLOW_DOC_ID );
+		
+		DomainObject TestReqChemicalObj = new DomainObject( TestReqChemicalId );
+		String strTestItem = TestReqChemicalObj.getAttributeValue(context, "CSTC_TestReq_TestItem");
+		String[] strTestItemName = strTestItem.split(",");
+		//System.out.println("strTestItemName = " + strTestItemName.length);
+		
+	/*delete old Results*/
+		StringList busSel = new StringList();
+		busSel.addElement( DomainObject.SELECT_ID );
+		StringList relSel = new StringList();
+		relSel.addElement( DomainRelationship.SELECT_ID );
+		
+	/*expand Test Result by Test Request*/
+		MapList mplTestResultChemical = TestReqChemicalObj.getRelatedObjects( context
+				, REL_CSTC_TestReq2TestResult , "CSTC_TestResult_Chemical_Whole,CSTC_TestResult_Chemical_DSCTg,CSTC_TestResult_Chemical_DSCTm,CSTC_TestResult_Chemical_TGA,CSTC_TestResult_Chemical_S144DR,CSTC_TestResult_Chemical_GPC,CSTC_TestResult_Chemical_PGC,CSTC_TestResult_Chemical_GC,CSTC_TestResult_Chemical_Material,CSTC_TestResult_Chemical_HPLC,CSTC_TestResult_Chemical_Phase,CSTC_TestResult_Chemical_SBR,CSTC_TestResult_Chemical_Microstructure,CSTC_TestResult_Chemical_Purity,CSTC_TestResult_Chemical_AntioxidantPurity,CSTC_TestResult_Chemical_SWD,CSTC_TestResult_Chemical_SSA,CSTC_TestResult_Chemical_DPU,CSTC_TestResult_Chemical_QoneR,CSTC_TestResult_Chemical_QtwoR,CSTC_TestResult_Chemical_QthreeR,CSTC_TestResult_Chemical_QfourR,CSTC_TestResult_Chemical_QfiveR,CSTC_TestResult_Chemical_Other,CSTC_TestResult_Chemical_DOSCAR,CSTC_TestResult_Chemical_MC,CSTC_TestResult_Chemical_EC,CSTC_TestResult_Chemical_QsixR"
+				, busSel, relSel , false , true , (short)1 , "" , "" , 0 );
+		//System.out.println("mplTestResultChemical = " + mplTestResultChemical.size());
+
+		for(int i = 0;i < mplTestResultChemical.size();i++ ){
+			Map TestResultChemicalInfo = (Map)mplTestResultChemical.get(i);
+			String ResultChemicalId = (String)TestResultChemicalInfo.get("id");
+			DomainObject doResult = new DomainObject( ResultChemicalId );
+			doResult.deleteObject(context);
+		}
+		
+	/*check TestTire TestPart exist*/
+		StringList busSel8 = new StringList();
+		busSel8.addElement( DomainObject.SELECT_ID );
+		StringList relSel8 = new StringList();
+		relSel8.addElement( DomainRelationship.SELECT_ID );
+		MapList mplTestTireChemical = TestReqChemicalObj.getRelatedObjects( context
+				, "CSTC_TestReq2TestTire" , "CSTC_TestTire_Chemical"
+				, busSel8, relSel8 , false , true , (short)1 , "" , "" , 0 );
+		
+		StringList busSel9 = new StringList();
+		busSel9.addElement( DomainObject.SELECT_ID );
+		StringList relSel9 = new StringList();
+		relSel9.addElement( DomainRelationship.SELECT_ID );
+		MapList mplTestPartChemical = TestReqChemicalObj.getRelatedObjects( context
+				, "CSTC_TestReq2TestPart" , "CSTC_TestPart_Chemical"
+				, busSel9, relSel9 , false , true , (short)1 , "" , "" , 0 );
+		if ((mplTestTireChemical.size() <= 0)&&(mplTestPartChemical.size() <= 0)){
+			
+			MqlUtil.mqlCommand(context,  "notice '" + " No TireInfo Or PartInfo.'" );
+			throw new FrameworkException( " Please Input Tire or Part Information");
+		}
+		
+		
+    /*create result*/ 
+        StringList busSel1 = new StringList();
+ 		busSel1.addElement( DomainObject.SELECT_ID );
+ 		StringList relSel1 = new StringList();
+ 		relSel1.addElement( DomainRelationship.SELECT_ID );		
+ 	/*expand Test Method by TestReq*/
+ 		MapList mplTestMethod = TestReqChemicalObj.getRelatedObjects( context
+ 				, "CSTC_TestReq2TestMethod" , "CSTC_TestMethod_Chemical"
+ 				, busSel1, relSel1 , false , true , (short)1 , "" , "" , 0 );
+ 		for(int j = 0;j<mplTestMethod.size();j++){
+			Map TestMethodInfo = (Map)mplTestMethod.get(j);
+			String TestMethodId = (String)TestMethodInfo.get("id");
+			DomainObject TestMethodObj = new DomainObject(TestMethodId);
+			//System.out.println("TestMethodId = " + TestMethodId);
+			
+			/*set CSTC_TestReq_TestType as Chemical*/
+			TestMethodObj.setAttributeValue(context, "CSTC_TestReq_TestType", "Chemical");
+			
+			/*expand Test Tire by TestReq*/
+		    StringList busSel2 = new StringList();
+		    busSel2.addElement( DomainObject.SELECT_ID );
+		    StringList relSel2 = new StringList();
+		    relSel2.addElement( DomainRelationship.SELECT_ID );
+		    MapList mplTestTire = TestReqChemicalObj.getRelatedObjects( context
+				, "CSTC_TestReq2TestTire" , "CSTC_TestTire_Chemical"
+				, busSel2, relSel2 , false , true , (short)1 , "" , "" , 0 );
+		   // System.out.println("mplTestTire = " + mplTestTire.size());
+		    
+		    for(int i = 0;i<mplTestTire.size();i++){
+		    	Map TestTireInfo = (Map)mplTestTire.get(i);
+    		    String TestTireId = (String)TestTireInfo.get("id");
+    		    DomainObject TestTireObj = new DomainObject(TestTireId);
+    		   // System.out.println("TestTireId = " + TestTireId);
+    		  //get TireId
+    		    String strTireId = TestTireObj.getAttributeValue(context,"CSTC_TestReq_SampleId");
+    		    String strTireSpec = TestTireObj.getAttributeValue(context,"CSTC_TireSpec");
+    		    String strPart = TestTireObj.getAttributeValue(context,"CSTC_TestReq_Part");
+    		    //System.out.println("strTireSpec = " + strTireSpec);
+    		    
+    		    //System.out.println("strTestItemName = " + strTestItemName[j].toString());
+    		    if((strTestItemName[j].toString()).equals("WholeChemical")){
+    		    	Date d = new Date();    
+    		        SimpleDateFormat sdf = new SimpleDateFormat("yy");  
+    		        String dateNowStr = sdf.format(d);
+    				MxSerialNumberGeneratorDao snDao = new MxSerialNumberGeneratorDao();
+    				FlowContext flowContext = new MxFlowContext(context);
+    				String strPrefix = "RPT-RR-"+dateNowStr;
+    				String serNo = snDao.getSerialNoByKey( flowContext , strPrefix , strPrefix , strPrefix, true );
+    				serNo = String.format("%08d", Integer.parseInt(serNo));
+    				String ResultChemicalName = strPrefix + serNo;
+    				
+    			/*create Result object*/
+    				DomainObject ResultChemicalObj = new DomainObject();
+    				String strVault = "eService Production";
+    				ResultChemicalObj.createObject(context, "CSTC_TestResult_Chemical_Whole", ResultChemicalName, "1", "CSTC_TestReq_Sub", strVault);
+    				ResultChemicalObj.setAttributeValue(context, "CSTC_TestReq_SampleId", strTireId);
+    				ResultChemicalObj.setAttributeValue(context, "CSTC_TireSpec", strTireSpec);
+    				ResultChemicalObj.setAttributeValue(context, "CSTC_TestReq_Part", strPart);
+    				ResultChemicalObj.addFromObject(context, new RelationshipType( REL_CSTC_TestTire2TestResult ), TestTireId);
+    				ResultChemicalObj.addFromObject(context, new RelationshipType( REL_CSTC_TestReq2TestResult ), TestReqChemicalId);
+    				ResultChemicalObj.addFromObject(context, new RelationshipType( REL_CSTC_TestMethod2TestResult ), TestMethodId);
+    				
+    		    }
+				else if((strTestItemName[j].toString()).equals("Deformulation")){
+    		    	Date d = new Date();    
+    		        SimpleDateFormat sdf = new SimpleDateFormat("yy");  
+    		        String dateNowStr = sdf.format(d);
+    				MxSerialNumberGeneratorDao snDao = new MxSerialNumberGeneratorDao();
+    				FlowContext flowContext = new MxFlowContext(context);
+    				String strPrefix = "RPT-RR-"+dateNowStr;
+    				String serNo = snDao.getSerialNoByKey( flowContext , strPrefix , strPrefix , strPrefix, true );
+    				serNo = String.format("%08d", Integer.parseInt(serNo));
+    				String ResultChemicalName = strPrefix + serNo;
+    				
+    			/*create Result object*/
+    				DomainObject ResultChemicalObj = new DomainObject();
+    				String strVault = "eService Production";
+    				ResultChemicalObj.createObject(context, "CSTC_TestResult_Chemical_Whole", ResultChemicalName, "1", "CSTC_TestReq_Sub", strVault);
+    				ResultChemicalObj.setAttributeValue(context, "CSTC_TestReq_SampleId", strTireId);
+    				ResultChemicalObj.addFromObject(context, new RelationshipType( REL_CSTC_TestTire2TestResult ), TestTireId);
+    				ResultChemicalObj.addFromObject(context, new RelationshipType( REL_CSTC_TestReq2TestResult ), TestReqChemicalId);
+    				ResultChemicalObj.addFromObject(context, new RelationshipType( REL_CSTC_TestMethod2TestResult ), TestMethodId);
+    		    }else if((strTestItemName[j].toString()).equals("Material")){
+    		    	Date d = new Date();    
+    		        SimpleDateFormat sdf = new SimpleDateFormat("yy");  
+    		        String dateNowStr = sdf.format(d);
+    				MxSerialNumberGeneratorDao snDao = new MxSerialNumberGeneratorDao();
+    				FlowContext flowContext = new MxFlowContext(context);
+    				String strPrefix = "RPT-RR-"+dateNowStr;
+    				String serNo = snDao.getSerialNoByKey( flowContext , strPrefix , strPrefix , strPrefix, true );
+    				serNo = String.format("%08d", Integer.parseInt(serNo));
+    				String ResultChemicalName = strPrefix + serNo;
+				  
+    			/*create Result object*/
+    				DomainObject ResultChemicalObj = new DomainObject();
+    				String strVault = "eService Production";
+    				ResultChemicalObj.createObject(context, "CSTC_TestResult_Chemical_Material", ResultChemicalName, "1", "CSTC_TestReq_Sub", strVault);
+    				ResultChemicalObj.setAttributeValue(context, "CSTC_TestReq_SampleId", strTireId);
+    				ResultChemicalObj.addFromObject(context, new RelationshipType( REL_CSTC_TestTire2TestResult ), TestTireId);
+    				ResultChemicalObj.addFromObject(context, new RelationshipType( REL_CSTC_TestReq2TestResult ), TestReqChemicalId);
+    				ResultChemicalObj.addFromObject(context, new RelationshipType( REL_CSTC_TestMethod2TestResult ), TestMethodId);
+    				
+    		    }else if((strTestItemName[j].toString()).equals("Antioxidant")){
+    		    	Date d = new Date();    
+    		        SimpleDateFormat sdf = new SimpleDateFormat("yy");  
+    		        String dateNowStr = sdf.format(d);
+    				MxSerialNumberGeneratorDao snDao = new MxSerialNumberGeneratorDao();
+    				FlowContext flowContext = new MxFlowContext(context);
+    				String strPrefix = "RPT-RR-"+dateNowStr;
+    				String serNo = snDao.getSerialNoByKey( flowContext , strPrefix , strPrefix , strPrefix, true );
+    				serNo = String.format("%08d", Integer.parseInt(serNo));
+    				String ResultChemicalName = strPrefix + serNo;
+    				
+    			/*create Result object*/
+    				DomainObject ResultChemicalObj = new DomainObject();
+    				String strVault = "eService Production";
+    				ResultChemicalObj.createObject(context, "CSTC_TestResult_Chemical_HPLC", ResultChemicalName, "1", "CSTC_TestReq_Sub", strVault);
+    				ResultChemicalObj.setAttributeValue(context, "CSTC_TestReq_SampleId", strTireId);
+    				ResultChemicalObj.addFromObject(context, new RelationshipType( REL_CSTC_TestTire2TestResult ), TestTireId);
+    				ResultChemicalObj.addFromObject(context, new RelationshipType( REL_CSTC_TestReq2TestResult ), TestReqChemicalId);
+    				ResultChemicalObj.addFromObject(context, new RelationshipType( REL_CSTC_TestMethod2TestResult ), TestMethodId);
+    				
+    		    }
+				else if((strTestItemName[j].toString()).equals("Phase")){
+    		    	Date d = new Date();    
+    		        SimpleDateFormat sdf = new SimpleDateFormat("yy");  
+    		        String dateNowStr = sdf.format(d);
+    				MxSerialNumberGeneratorDao snDao = new MxSerialNumberGeneratorDao();
+    				FlowContext flowContext = new MxFlowContext(context);
+    				String strPrefix = "RPT-RR-"+dateNowStr;
+    				String serNo = snDao.getSerialNoByKey( flowContext , strPrefix , strPrefix , strPrefix, true );
+    				serNo = String.format("%08d", Integer.parseInt(serNo));
+    				String ResultChemicalName = strPrefix + serNo;
+    				
+    			/*create Result object*/
+    				DomainObject ResultChemicalObj = new DomainObject();
+    				String strVault = "eService Production";
+    				ResultChemicalObj.createObject(context, "CSTC_TestResult_Chemical_Phase", ResultChemicalName, "1", "CSTC_TestReq_Sub", strVault);
+    				ResultChemicalObj.setAttributeValue(context, "CSTC_TestReq_SampleId", strTireId);
+    				ResultChemicalObj.addFromObject(context, new RelationshipType( REL_CSTC_TestTire2TestResult ), TestTireId);
+    				ResultChemicalObj.addFromObject(context, new RelationshipType( REL_CSTC_TestReq2TestResult ), TestReqChemicalId);
+    				ResultChemicalObj.addFromObject(context, new RelationshipType( REL_CSTC_TestMethod2TestResult ), TestMethodId);
+    				
+    		    }
+				else if((strTestItemName[j].toString()).equals("SBR")){
+    		    	Date d = new Date();    
+    		        SimpleDateFormat sdf = new SimpleDateFormat("yy");  
+    		        String dateNowStr = sdf.format(d);
+    				MxSerialNumberGeneratorDao snDao = new MxSerialNumberGeneratorDao();
+    				FlowContext flowContext = new MxFlowContext(context);
+    				String strPrefix = "RPT-RR-"+dateNowStr;
+    				String serNo = snDao.getSerialNoByKey( flowContext , strPrefix , strPrefix , strPrefix, true );
+    				serNo = String.format("%08d", Integer.parseInt(serNo));
+    				String ResultChemicalName = strPrefix + serNo;
+    				
+    			/*create Result object*/
+    				DomainObject ResultChemicalObj = new DomainObject();
+    				String strVault = "eService Production";
+    				ResultChemicalObj.createObject(context, "CSTC_TestResult_Chemical_SBR", ResultChemicalName, "1", "CSTC_TestReq_Sub", strVault);
+    				ResultChemicalObj.setAttributeValue(context, "CSTC_TestReq_SampleId", strTireId);
+    				ResultChemicalObj.addFromObject(context, new RelationshipType( REL_CSTC_TestTire2TestResult ), TestTireId);
+    				ResultChemicalObj.addFromObject(context, new RelationshipType( REL_CSTC_TestReq2TestResult ), TestReqChemicalId);
+    				ResultChemicalObj.addFromObject(context, new RelationshipType( REL_CSTC_TestMethod2TestResult ), TestMethodId);
+    				
+    		    }
+				else if((strTestItemName[j].toString()).equals("Microstructure")){
+    		    	Date d = new Date();    
+    		        SimpleDateFormat sdf = new SimpleDateFormat("yy");  
+    		        String dateNowStr = sdf.format(d);
+    				MxSerialNumberGeneratorDao snDao = new MxSerialNumberGeneratorDao();
+    				FlowContext flowContext = new MxFlowContext(context);
+    				String strPrefix = "RPT-RR-"+dateNowStr;
+    				String serNo = snDao.getSerialNoByKey( flowContext , strPrefix , strPrefix , strPrefix, true );
+    				serNo = String.format("%08d", Integer.parseInt(serNo));
+    				String ResultChemicalName = strPrefix + serNo;
+    				
+    			/*create Result object*/
+    				DomainObject ResultChemicalObj = new DomainObject();
+    				String strVault = "eService Production";
+    				ResultChemicalObj.createObject(context, "CSTC_TestResult_Chemical_Microstructure", ResultChemicalName, "1", "CSTC_TestReq_Sub", strVault);
+    				ResultChemicalObj.setAttributeValue(context, "CSTC_TestReq_SampleId", strTireId);
+    				ResultChemicalObj.addFromObject(context, new RelationshipType( REL_CSTC_TestTire2TestResult ), TestTireId);
+    				ResultChemicalObj.addFromObject(context, new RelationshipType( REL_CSTC_TestReq2TestResult ), TestReqChemicalId);
+    				ResultChemicalObj.addFromObject(context, new RelationshipType( REL_CSTC_TestMethod2TestResult ), TestMethodId);
+    				
+    		    }
+				else if((strTestItemName[j].toString()).equals("Purity")){
+    		    	Date d = new Date();    
+    		        SimpleDateFormat sdf = new SimpleDateFormat("yy");  
+    		        String dateNowStr = sdf.format(d);
+    				MxSerialNumberGeneratorDao snDao = new MxSerialNumberGeneratorDao();
+    				FlowContext flowContext = new MxFlowContext(context);
+    				String strPrefix = "RPT-RR-"+dateNowStr;
+    				String serNo = snDao.getSerialNoByKey( flowContext , strPrefix , strPrefix , strPrefix, true );
+    				serNo = String.format("%08d", Integer.parseInt(serNo));
+    				String ResultChemicalName = strPrefix + serNo;
+    				
+    			/*create Result object*/
+    				DomainObject ResultChemicalObj = new DomainObject();
+    				String strVault = "eService Production";
+    				ResultChemicalObj.createObject(context, "CSTC_TestResult_Chemical_Purity", ResultChemicalName, "1", "CSTC_TestReq_Sub", strVault);
+    				ResultChemicalObj.setAttributeValue(context, "CSTC_TestReq_SampleId", strTireId);
+    				ResultChemicalObj.addFromObject(context, new RelationshipType( REL_CSTC_TestTire2TestResult ), TestTireId);
+    				ResultChemicalObj.addFromObject(context, new RelationshipType( REL_CSTC_TestReq2TestResult ), TestReqChemicalId);
+    				ResultChemicalObj.addFromObject(context, new RelationshipType( REL_CSTC_TestMethod2TestResult ), TestMethodId);
+    				
+    		    }
+				else if((strTestItemName[j].toString()).equals("AP")){
+    		    	Date d = new Date();    
+    		        SimpleDateFormat sdf = new SimpleDateFormat("yy");  
+    		        String dateNowStr = sdf.format(d);
+    				MxSerialNumberGeneratorDao snDao = new MxSerialNumberGeneratorDao();
+    				FlowContext flowContext = new MxFlowContext(context);
+    				String strPrefix = "RPT-RR-"+dateNowStr;
+    				String serNo = snDao.getSerialNoByKey( flowContext , strPrefix , strPrefix , strPrefix, true );
+    				serNo = String.format("%08d", Integer.parseInt(serNo));
+    				String ResultChemicalName = strPrefix + serNo;
+    				
+    			/*create Result object*/
+    				DomainObject ResultChemicalObj = new DomainObject();
+    				String strVault = "eService Production";
+    				ResultChemicalObj.createObject(context, "CSTC_TestResult_Chemical_AntioxidantPurity", ResultChemicalName, "1", "CSTC_TestReq_Sub", strVault);
+    				ResultChemicalObj.setAttributeValue(context, "CSTC_TestReq_SampleId", strTireId);
+    				ResultChemicalObj.addFromObject(context, new RelationshipType( REL_CSTC_TestTire2TestResult ), TestTireId);
+    				ResultChemicalObj.addFromObject(context, new RelationshipType( REL_CSTC_TestReq2TestResult ), TestReqChemicalId);
+    				ResultChemicalObj.addFromObject(context, new RelationshipType( REL_CSTC_TestMethod2TestResult ), TestMethodId);
+    				
+    		    }
+				else if((strTestItemName[j].toString()).equals("SWD")){
+    		    	Date d = new Date();    
+    		        SimpleDateFormat sdf = new SimpleDateFormat("yy");  
+    		        String dateNowStr = sdf.format(d);
+    				MxSerialNumberGeneratorDao snDao = new MxSerialNumberGeneratorDao();
+    				FlowContext flowContext = new MxFlowContext(context);
+    				String strPrefix = "RPT-RR-"+dateNowStr;
+    				String serNo = snDao.getSerialNoByKey( flowContext , strPrefix , strPrefix , strPrefix, true );
+    				serNo = String.format("%08d", Integer.parseInt(serNo));
+    				String ResultChemicalName = strPrefix + serNo;
+    				
+    			/*create Result object*/
+    				DomainObject ResultChemicalObj = new DomainObject();
+    				String strVault = "eService Production";
+    				ResultChemicalObj.createObject(context, "CSTC_TestResult_Chemical_SWD", ResultChemicalName, "1", "CSTC_TestReq_Sub", strVault);
+    				ResultChemicalObj.setAttributeValue(context, "CSTC_TestReq_SampleId", strTireId);
+    				ResultChemicalObj.addFromObject(context, new RelationshipType( REL_CSTC_TestTire2TestResult ), TestTireId);
+    				ResultChemicalObj.addFromObject(context, new RelationshipType( REL_CSTC_TestReq2TestResult ), TestReqChemicalId);
+    				ResultChemicalObj.addFromObject(context, new RelationshipType( REL_CSTC_TestMethod2TestResult ), TestMethodId);
+    				
+    		    }
+				else if((strTestItemName[j].toString()).equals("SSA")){
+    		    	Date d = new Date();    
+    		        SimpleDateFormat sdf = new SimpleDateFormat("yy");  
+    		        String dateNowStr = sdf.format(d);
+    				MxSerialNumberGeneratorDao snDao = new MxSerialNumberGeneratorDao();
+    				FlowContext flowContext = new MxFlowContext(context);
+    				String strPrefix = "RPT-RR-"+dateNowStr;
+    				String serNo = snDao.getSerialNoByKey( flowContext , strPrefix , strPrefix , strPrefix, true );
+    				serNo = String.format("%08d", Integer.parseInt(serNo));
+    				String ResultChemicalName = strPrefix + serNo;
+    				
+    			/*create Result object*/
+    				DomainObject ResultChemicalObj = new DomainObject();
+    				String strVault = "eService Production";
+    				ResultChemicalObj.createObject(context, "CSTC_TestResult_Chemical_SSA", ResultChemicalName, "1", "CSTC_TestReq_Sub", strVault);
+    				ResultChemicalObj.setAttributeValue(context, "CSTC_TestReq_SampleId", strTireId);
+    				ResultChemicalObj.addFromObject(context, new RelationshipType( REL_CSTC_TestTire2TestResult ), TestTireId);
+    				ResultChemicalObj.addFromObject(context, new RelationshipType( REL_CSTC_TestReq2TestResult ), TestReqChemicalId);
+    				ResultChemicalObj.addFromObject(context, new RelationshipType( REL_CSTC_TestMethod2TestResult ), TestMethodId);
+    				
+    		    }
+			else if((strTestItemName[j].toString()).equals("DPU")){
+    		    	Date d = new Date();    
+    		        SimpleDateFormat sdf = new SimpleDateFormat("yy");  
+    		        String dateNowStr = sdf.format(d);
+    				MxSerialNumberGeneratorDao snDao = new MxSerialNumberGeneratorDao();
+    				FlowContext flowContext = new MxFlowContext(context);
+    				String strPrefix = "RPT-RR-"+dateNowStr;
+    				String serNo = snDao.getSerialNoByKey( flowContext , strPrefix , strPrefix , strPrefix, true );
+    				serNo = String.format("%08d", Integer.parseInt(serNo));
+    				String ResultChemicalName = strPrefix + serNo;
+				
+	
+    			/*create Result object*/
+    				DomainObject ResultChemicalObj = new DomainObject();
+    				String strVault = "eService Production";
+    				ResultChemicalObj.createObject(context, "CSTC_TestResult_Chemical_DPU", ResultChemicalName, "1", "CSTC_TestReq_Sub", strVault);
+    				ResultChemicalObj.setAttributeValue(context, "CSTC_TestReq_SampleId", strTireId);
+    				ResultChemicalObj.addFromObject(context, new RelationshipType( REL_CSTC_TestTire2TestResult ), TestTireId);
+    				ResultChemicalObj.addFromObject(context, new RelationshipType( REL_CSTC_TestReq2TestResult ), TestReqChemicalId);
+    				ResultChemicalObj.addFromObject(context, new RelationshipType( REL_CSTC_TestMethod2TestResult ), TestMethodId);
+    				
+    		    }
+				else if((strTestItemName[j].toString()).equals("QoneR")){
+    		    	Date d = new Date();    
+    		        SimpleDateFormat sdf = new SimpleDateFormat("yy");  
+    		        String dateNowStr = sdf.format(d);
+    				MxSerialNumberGeneratorDao snDao = new MxSerialNumberGeneratorDao();
+    				FlowContext flowContext = new MxFlowContext(context);
+    				String strPrefix = "RPT-RR-"+dateNowStr;
+    				String serNo = snDao.getSerialNoByKey( flowContext , strPrefix , strPrefix , strPrefix, true );
+    				serNo = String.format("%08d", Integer.parseInt(serNo));
+    				String ResultChemicalName = strPrefix + serNo;
+				
+    			/*create Result object*/
+    				DomainObject ResultChemicalObj = new DomainObject();
+    				String strVault = "eService Production";
+    				ResultChemicalObj.createObject(context, "CSTC_TestResult_Chemical_QoneR", ResultChemicalName, "1", "CSTC_TestReq_Sub", strVault);
+    				ResultChemicalObj.setAttributeValue(context, "CSTC_TestReq_SampleId", strTireId);
+    				ResultChemicalObj.addFromObject(context, new RelationshipType( REL_CSTC_TestTire2TestResult ), TestTireId);
+    				ResultChemicalObj.addFromObject(context, new RelationshipType( REL_CSTC_TestReq2TestResult ), TestReqChemicalId);
+    				ResultChemicalObj.addFromObject(context, new RelationshipType( REL_CSTC_TestMethod2TestResult ), TestMethodId);
+    				
+    		    }
+				else if((strTestItemName[j].toString()).equals("QtwoR")){
+    		    	Date d = new Date();    
+    		        SimpleDateFormat sdf = new SimpleDateFormat("yy");  
+    		        String dateNowStr = sdf.format(d);
+    				MxSerialNumberGeneratorDao snDao = new MxSerialNumberGeneratorDao();
+    				FlowContext flowContext = new MxFlowContext(context);
+    				String strPrefix = "RPT-RR-"+dateNowStr;
+    				String serNo = snDao.getSerialNoByKey( flowContext , strPrefix , strPrefix , strPrefix, true );
+    				serNo = String.format("%08d", Integer.parseInt(serNo));
+    				String ResultChemicalName = strPrefix + serNo;
+				
+    			/*create Result object*/
+    				DomainObject ResultChemicalObj = new DomainObject();
+    				String strVault = "eService Production";
+    				ResultChemicalObj.createObject(context, "CSTC_TestResult_Chemical_QtwoR", ResultChemicalName, "1", "CSTC_TestReq_Sub", strVault);
+    				ResultChemicalObj.setAttributeValue(context, "CSTC_TestReq_SampleId", strTireId);
+    				ResultChemicalObj.addFromObject(context, new RelationshipType( REL_CSTC_TestTire2TestResult ), TestTireId);
+    				ResultChemicalObj.addFromObject(context, new RelationshipType( REL_CSTC_TestReq2TestResult ), TestReqChemicalId);
+    				ResultChemicalObj.addFromObject(context, new RelationshipType( REL_CSTC_TestMethod2TestResult ), TestMethodId);
+    				
+    		    }
+				else if((strTestItemName[j].toString()).equals("QthreeR")){
+    		    	Date d = new Date();    
+    		        SimpleDateFormat sdf = new SimpleDateFormat("yy");  
+    		        String dateNowStr = sdf.format(d);
+    				MxSerialNumberGeneratorDao snDao = new MxSerialNumberGeneratorDao();
+    				FlowContext flowContext = new MxFlowContext(context);
+    				String strPrefix = "RPT-RR-"+dateNowStr;
+    				String serNo = snDao.getSerialNoByKey( flowContext , strPrefix , strPrefix , strPrefix, true );
+    				serNo = String.format("%08d", Integer.parseInt(serNo));
+    				String ResultChemicalName = strPrefix + serNo;
+				
+    			/*create Result object*/
+    				DomainObject ResultChemicalObj = new DomainObject();
+    				String strVault = "eService Production";
+    				ResultChemicalObj.createObject(context, "CSTC_TestResult_Chemical_QthreeR", ResultChemicalName, "1", "CSTC_TestReq_Sub", strVault);
+    				ResultChemicalObj.setAttributeValue(context, "CSTC_TestReq_SampleId", strTireId);
+    				ResultChemicalObj.addFromObject(context, new RelationshipType( REL_CSTC_TestTire2TestResult ), TestTireId);
+    				ResultChemicalObj.addFromObject(context, new RelationshipType( REL_CSTC_TestReq2TestResult ), TestReqChemicalId);
+    				ResultChemicalObj.addFromObject(context, new RelationshipType( REL_CSTC_TestMethod2TestResult ), TestMethodId);
+    				
+    		    }
+				else if((strTestItemName[j].toString()).equals("QfourR")){
+    		    	Date d = new Date();    
+    		        SimpleDateFormat sdf = new SimpleDateFormat("yy");  
+    		        String dateNowStr = sdf.format(d);
+    				MxSerialNumberGeneratorDao snDao = new MxSerialNumberGeneratorDao();
+    				FlowContext flowContext = new MxFlowContext(context);
+    				String strPrefix = "RPT-RR-"+dateNowStr;
+    				String serNo = snDao.getSerialNoByKey( flowContext , strPrefix , strPrefix , strPrefix, true );
+    				serNo = String.format("%08d", Integer.parseInt(serNo));
+    				String ResultChemicalName = strPrefix + serNo;
+				
+    			/*create Result object*/
+    				DomainObject ResultChemicalObj = new DomainObject();
+    				String strVault = "eService Production";
+    				ResultChemicalObj.createObject(context, "CSTC_TestResult_Chemical_QfourR", ResultChemicalName, "1", "CSTC_TestReq_Sub", strVault);
+    				ResultChemicalObj.setAttributeValue(context, "CSTC_TestReq_SampleId", strTireId);
+    				ResultChemicalObj.addFromObject(context, new RelationshipType( REL_CSTC_TestTire2TestResult ), TestTireId);
+    				ResultChemicalObj.addFromObject(context, new RelationshipType( REL_CSTC_TestReq2TestResult ), TestReqChemicalId);
+    				ResultChemicalObj.addFromObject(context, new RelationshipType( REL_CSTC_TestMethod2TestResult ), TestMethodId);
+    				
+    		    }
+				else if((strTestItemName[j].toString()).equals("QfiveR")){
+    		    	Date d = new Date();    
+    		        SimpleDateFormat sdf = new SimpleDateFormat("yy");  
+    		        String dateNowStr = sdf.format(d);
+    				MxSerialNumberGeneratorDao snDao = new MxSerialNumberGeneratorDao();
+    				FlowContext flowContext = new MxFlowContext(context);
+    				String strPrefix = "RPT-RR-"+dateNowStr;
+    				String serNo = snDao.getSerialNoByKey( flowContext , strPrefix , strPrefix , strPrefix, true );
+    				serNo = String.format("%08d", Integer.parseInt(serNo));
+    				String ResultChemicalName = strPrefix + serNo;
+				
+    			/*create Result object*/
+    				DomainObject ResultChemicalObj = new DomainObject();
+    				String strVault = "eService Production";
+    				ResultChemicalObj.createObject(context, "CSTC_TestResult_Chemical_QfiveR", ResultChemicalName, "1", "CSTC_TestReq_Sub", strVault);
+    				ResultChemicalObj.setAttributeValue(context, "CSTC_TestReq_SampleId", strTireId);
+    				ResultChemicalObj.addFromObject(context, new RelationshipType( REL_CSTC_TestTire2TestResult ), TestTireId);
+    				ResultChemicalObj.addFromObject(context, new RelationshipType( REL_CSTC_TestReq2TestResult ), TestReqChemicalId);
+    				ResultChemicalObj.addFromObject(context, new RelationshipType( REL_CSTC_TestMethod2TestResult ), TestMethodId);
+    				
+    		    }
+				else if((strTestItemName[j].toString()).equals("Other")){
+    		    	Date d = new Date();    
+    		        SimpleDateFormat sdf = new SimpleDateFormat("yy");  
+    		        String dateNowStr = sdf.format(d);
+    				MxSerialNumberGeneratorDao snDao = new MxSerialNumberGeneratorDao();
+    				FlowContext flowContext = new MxFlowContext(context);
+    				String strPrefix = "RPT-RR-"+dateNowStr;
+    				String serNo = snDao.getSerialNoByKey( flowContext , strPrefix , strPrefix , strPrefix, true );
+    				serNo = String.format("%08d", Integer.parseInt(serNo));
+    				String ResultChemicalName = strPrefix + serNo;
+				
+    			/*create Result object*/
+    				DomainObject ResultChemicalObj = new DomainObject();
+    				String strVault = "eService Production";
+    				ResultChemicalObj.createObject(context, "CSTC_TestResult_Chemical_Other", ResultChemicalName, "1", "CSTC_TestReq_Sub", strVault);
+    				ResultChemicalObj.setAttributeValue(context, "CSTC_TestReq_SampleId", strTireId);
+    				ResultChemicalObj.addFromObject(context, new RelationshipType( REL_CSTC_TestTire2TestResult ), TestTireId);
+    				ResultChemicalObj.addFromObject(context, new RelationshipType( REL_CSTC_TestReq2TestResult ), TestReqChemicalId);
+    				ResultChemicalObj.addFromObject(context, new RelationshipType( REL_CSTC_TestMethod2TestResult ), TestMethodId);
+    				
+    		    }
+			
+				else if((strTestItemName[j].toString()).equals("QA")){
+    		    	Date d = new Date();    
+    		        SimpleDateFormat sdf = new SimpleDateFormat("yy");  
+    		        String dateNowStr = sdf.format(d);
+    				MxSerialNumberGeneratorDao snDao = new MxSerialNumberGeneratorDao();
+    				FlowContext flowContext = new MxFlowContext(context);
+    				String strPrefix = "RPT-RR-"+dateNowStr;
+    				String serNo = snDao.getSerialNoByKey( flowContext , strPrefix , strPrefix , strPrefix, true );
+    				serNo = String.format("%08d", Integer.parseInt(serNo));
+    				String ResultChemicalName = strPrefix + serNo;
+    				
+    			/*create Result object*/
+    				DomainObject ResultChemicalObj = new DomainObject();
+    				String strVault = "eService Production";
+    				ResultChemicalObj.createObject(context, "CSTC_TestResult_Chemical_QA", ResultChemicalName, "1", "CSTC_TestReq_Sub", strVault);
+    				ResultChemicalObj.setAttributeValue(context, "CSTC_TestReq_SampleId", strTireId);
+    				ResultChemicalObj.addFromObject(context, new RelationshipType( REL_CSTC_TestTire2TestResult ), TestTireId);
+    				ResultChemicalObj.addFromObject(context, new RelationshipType( REL_CSTC_TestReq2TestResult ), TestReqChemicalId);
+    				ResultChemicalObj.addFromObject(context, new RelationshipType( REL_CSTC_TestMethod2TestResult ), TestMethodId);
+    				
+    		    }else if((strTestItemName[j].toString()).equals("DSCTg")){
+    		    	Date d = new Date();    
+    		        SimpleDateFormat sdf = new SimpleDateFormat("yy");  
+    		        String dateNowStr = sdf.format(d);
+    				MxSerialNumberGeneratorDao snDao = new MxSerialNumberGeneratorDao();
+    				FlowContext flowContext = new MxFlowContext(context);
+    				String strPrefix = "RPT-RR-"+dateNowStr;
+    				String serNo = snDao.getSerialNoByKey( flowContext , strPrefix , strPrefix , strPrefix, true );
+    				serNo = String.format("%08d", Integer.parseInt(serNo));
+    				String ResultChemicalName = strPrefix + serNo;
+    				
+    			/*create Result object*/
+    				DomainObject ResultChemicalObj = new DomainObject();
+    				String strVault = "eService Production";
+    				ResultChemicalObj.createObject(context, "CSTC_TestResult_Chemical_DSCTg", ResultChemicalName, "1", "CSTC_TestReq_Sub", strVault);
+    				ResultChemicalObj.setAttributeValue(context, "CSTC_TestReq_SampleId", strTireId);
+    				ResultChemicalObj.addFromObject(context, new RelationshipType( REL_CSTC_TestTire2TestResult ), TestTireId);
+    				ResultChemicalObj.addFromObject(context, new RelationshipType( REL_CSTC_TestReq2TestResult ), TestReqChemicalId);
+    				ResultChemicalObj.addFromObject(context, new RelationshipType( REL_CSTC_TestMethod2TestResult ), TestMethodId);
+    				
+    		    }else if((strTestItemName[j].toString()).equals("DSCTm")){
+    		    	Date d = new Date();    
+    		        SimpleDateFormat sdf = new SimpleDateFormat("yy");  
+    		        String dateNowStr = sdf.format(d);
+    				MxSerialNumberGeneratorDao snDao = new MxSerialNumberGeneratorDao();
+    				FlowContext flowContext = new MxFlowContext(context);
+    				String strPrefix = "RPT-RR-"+dateNowStr;
+    				String serNo = snDao.getSerialNoByKey( flowContext , strPrefix , strPrefix , strPrefix, true );
+    				serNo = String.format("%08d", Integer.parseInt(serNo));
+    				String ResultChemicalName = strPrefix + serNo;
+    				
+    			/*create Result object*/
+    				DomainObject ResultChemicalObj = new DomainObject();
+    				String strVault = "eService Production";
+    				ResultChemicalObj.createObject(context, "CSTC_TestResult_Chemical_DSCTm", ResultChemicalName, "1", "CSTC_TestReq_Sub", strVault);
+    				ResultChemicalObj.setAttributeValue(context, "CSTC_TestReq_SampleId", strTireId);
+    				ResultChemicalObj.addFromObject(context, new RelationshipType( REL_CSTC_TestTire2TestResult ), TestTireId);
+    				ResultChemicalObj.addFromObject(context, new RelationshipType( REL_CSTC_TestReq2TestResult ), TestReqChemicalId);
+    				ResultChemicalObj.addFromObject(context, new RelationshipType( REL_CSTC_TestMethod2TestResult ), TestMethodId);
+    				
+    		    }else if((strTestItemName[j].toString()).equals("TGA")){
+    		    	Date d = new Date();    
+    		        SimpleDateFormat sdf = new SimpleDateFormat("yy");  
+    		        String dateNowStr = sdf.format(d);
+    				MxSerialNumberGeneratorDao snDao = new MxSerialNumberGeneratorDao();
+    				FlowContext flowContext = new MxFlowContext(context);
+    				String strPrefix = "RPT-RR-"+dateNowStr;
+    				String serNo = snDao.getSerialNoByKey( flowContext , strPrefix , strPrefix , strPrefix, true );
+    				serNo = String.format("%08d", Integer.parseInt(serNo));
+    				String ResultChemicalName = strPrefix + serNo;
+    				
+    			/*create Result object*/
+    				DomainObject ResultChemicalObj = new DomainObject();
+    				String strVault = "eService Production";
+    				ResultChemicalObj.createObject(context, "CSTC_TestResult_Chemical_TGA", ResultChemicalName, "1", "CSTC_TestReq_Sub", strVault);
+    				ResultChemicalObj.setAttributeValue(context, "CSTC_TestReq_SampleId", strTireId);
+    				ResultChemicalObj.addFromObject(context, new RelationshipType( REL_CSTC_TestTire2TestResult ), TestTireId);
+    				ResultChemicalObj.addFromObject(context, new RelationshipType( REL_CSTC_TestReq2TestResult ), TestReqChemicalId);
+    				ResultChemicalObj.addFromObject(context, new RelationshipType( REL_CSTC_TestMethod2TestResult ), TestMethodId);
+    				
+    		    }else if((strTestItemName[j].toString()).equals("S144DR")){
+    		    	Date d = new Date();    
+    		        SimpleDateFormat sdf = new SimpleDateFormat("yy");  
+    		        String dateNowStr = sdf.format(d);
+    				MxSerialNumberGeneratorDao snDao = new MxSerialNumberGeneratorDao();
+    				FlowContext flowContext = new MxFlowContext(context);
+    				String strPrefix = "RPT-RR-"+dateNowStr;
+    				String serNo = snDao.getSerialNoByKey( flowContext , strPrefix , strPrefix , strPrefix, true );
+    				serNo = String.format("%08d", Integer.parseInt(serNo));
+    				String ResultChemicalName = strPrefix + serNo;
+    				
+    			/*create Result object*/
+    				DomainObject ResultChemicalObj = new DomainObject();
+    				String strVault = "eService Production";
+    				ResultChemicalObj.createObject(context, "CSTC_TestResult_Chemical_S144DR", ResultChemicalName, "1", "CSTC_TestReq_Sub", strVault);
+    				ResultChemicalObj.setAttributeValue(context, "CSTC_TestReq_SampleId", strTireId);
+    				ResultChemicalObj.addFromObject(context, new RelationshipType( REL_CSTC_TestTire2TestResult ), TestTireId);
+    				ResultChemicalObj.addFromObject(context, new RelationshipType( REL_CSTC_TestReq2TestResult ), TestReqChemicalId);
+    				ResultChemicalObj.addFromObject(context, new RelationshipType( REL_CSTC_TestMethod2TestResult ), TestMethodId);
+    				
+    		    }else if((strTestItemName[j].toString()).equals("GPC")){
+    		    	Date d = new Date();    
+    		        SimpleDateFormat sdf = new SimpleDateFormat("yy");  
+    		        String dateNowStr = sdf.format(d);
+    				MxSerialNumberGeneratorDao snDao = new MxSerialNumberGeneratorDao();
+    				FlowContext flowContext = new MxFlowContext(context);
+    				String strPrefix = "RPT-RR-"+dateNowStr;
+    				String serNo = snDao.getSerialNoByKey( flowContext , strPrefix , strPrefix , strPrefix, true );
+    				serNo = String.format("%08d", Integer.parseInt(serNo));
+    				String ResultChemicalName = strPrefix + serNo;
+    				
+    			/*create Result object*/
+    				DomainObject ResultChemicalObj = new DomainObject();
+    				String strVault = "eService Production";
+    				ResultChemicalObj.createObject(context, "CSTC_TestResult_Chemical_GPC", ResultChemicalName, "1", "CSTC_TestReq_Sub", strVault);
+    				ResultChemicalObj.setAttributeValue(context, "CSTC_TestReq_SampleId", strTireId);
+    				ResultChemicalObj.addFromObject(context, new RelationshipType( REL_CSTC_TestTire2TestResult ), TestTireId);
+    				ResultChemicalObj.addFromObject(context, new RelationshipType( REL_CSTC_TestReq2TestResult ), TestReqChemicalId);
+    				ResultChemicalObj.addFromObject(context, new RelationshipType( REL_CSTC_TestMethod2TestResult ), TestMethodId);
+    				
+    		    }else if((strTestItemName[j].toString()).equals("PGC")){
+    		    	Date d = new Date();    
+    		        SimpleDateFormat sdf = new SimpleDateFormat("yy");  
+    		        String dateNowStr = sdf.format(d);
+    				MxSerialNumberGeneratorDao snDao = new MxSerialNumberGeneratorDao();
+    				FlowContext flowContext = new MxFlowContext(context);
+    				String strPrefix = "RPT-RR-"+dateNowStr;
+    				String serNo = snDao.getSerialNoByKey( flowContext , strPrefix , strPrefix , strPrefix, true );
+    				serNo = String.format("%08d", Integer.parseInt(serNo));
+    				String ResultChemicalName = strPrefix + serNo;
+    				
+    			/*create Result object*/
+    				DomainObject ResultChemicalObj = new DomainObject();
+    				String strVault = "eService Production";
+    				ResultChemicalObj.createObject(context, "CSTC_TestResult_Chemical_PGC", ResultChemicalName, "1", "CSTC_TestReq_Sub", strVault);
+    				ResultChemicalObj.setAttributeValue(context, "CSTC_TestReq_SampleId", strTireId);
+    				ResultChemicalObj.addFromObject(context, new RelationshipType( REL_CSTC_TestTire2TestResult ), TestTireId);
+    				ResultChemicalObj.addFromObject(context, new RelationshipType( REL_CSTC_TestReq2TestResult ), TestReqChemicalId);
+    				ResultChemicalObj.addFromObject(context, new RelationshipType( REL_CSTC_TestMethod2TestResult ), TestMethodId);
+    				
+    		    }else if((strTestItemName[j].toString()).equals("GC")){
+    		    	Date d = new Date();    
+    		        SimpleDateFormat sdf = new SimpleDateFormat("yy");  
+    		        String dateNowStr = sdf.format(d);
+    				MxSerialNumberGeneratorDao snDao = new MxSerialNumberGeneratorDao();
+    				FlowContext flowContext = new MxFlowContext(context);
+    				String strPrefix = "RPT-RR-"+dateNowStr;
+    				String serNo = snDao.getSerialNoByKey( flowContext , strPrefix , strPrefix , strPrefix, true );
+    				serNo = String.format("%08d", Integer.parseInt(serNo));
+    				String ResultChemicalName = strPrefix + serNo;
+    				
+    			/*create Result object*/
+    				DomainObject ResultChemicalObj = new DomainObject();
+    				String strVault = "eService Production";
+    				ResultChemicalObj.createObject(context, "CSTC_TestResult_Chemical_GC", ResultChemicalName, "1", "CSTC_TestReq_Sub", strVault);
+    				ResultChemicalObj.setAttributeValue(context, "CSTC_TestReq_SampleId", strTireId);
+    				ResultChemicalObj.addFromObject(context, new RelationshipType( REL_CSTC_TestTire2TestResult ), TestTireId);
+    				ResultChemicalObj.addFromObject(context, new RelationshipType( REL_CSTC_TestReq2TestResult ), TestReqChemicalId);
+    				ResultChemicalObj.addFromObject(context, new RelationshipType( REL_CSTC_TestMethod2TestResult ), TestMethodId);
+    				
+    		    }
+				else if((strTestItemName[j].toString()).equals("DOSCAR")){
+    		    	Date d = new Date();    
+    		        SimpleDateFormat sdf = new SimpleDateFormat("yy");  
+    		        String dateNowStr = sdf.format(d);
+    				MxSerialNumberGeneratorDao snDao = new MxSerialNumberGeneratorDao();
+    				FlowContext flowContext = new MxFlowContext(context);
+    				String strPrefix = "RPT-RR-"+dateNowStr;
+    				String serNo = snDao.getSerialNoByKey( flowContext , strPrefix , strPrefix , strPrefix, true );
+    				serNo = String.format("%08d", Integer.parseInt(serNo));
+    				String ResultChemicalName = strPrefix + serNo;
+    				
+    			/*create Result object*/
+    				DomainObject ResultChemicalObj = new DomainObject();
+    				String strVault = "eService Production";
+    				ResultChemicalObj.createObject(context, "CSTC_TestResult_Chemical_DOSCAR", ResultChemicalName, "1", "CSTC_TestReq_Sub", strVault);
+    				ResultChemicalObj.setAttributeValue(context, "CSTC_TestReq_SampleId", strTireId);
+    				ResultChemicalObj.addFromObject(context, new RelationshipType( REL_CSTC_TestTire2TestResult ), TestTireId);
+    				ResultChemicalObj.addFromObject(context, new RelationshipType( REL_CSTC_TestReq2TestResult ), TestReqChemicalId);
+    				ResultChemicalObj.addFromObject(context, new RelationshipType( REL_CSTC_TestMethod2TestResult ), TestMethodId);
+    				
+    		    }
+				else if((strTestItemName[j].toString()).equals("MC")){
+    		    	Date d = new Date();    
+    		        SimpleDateFormat sdf = new SimpleDateFormat("yy");  
+    		        String dateNowStr = sdf.format(d);
+    				MxSerialNumberGeneratorDao snDao = new MxSerialNumberGeneratorDao();
+    				FlowContext flowContext = new MxFlowContext(context);
+    				String strPrefix = "RPT-RR-"+dateNowStr;
+    				String serNo = snDao.getSerialNoByKey( flowContext , strPrefix , strPrefix , strPrefix, true );
+    				serNo = String.format("%08d", Integer.parseInt(serNo));
+    				String ResultChemicalName = strPrefix + serNo;
+    				
+    			/*create Result object*/
+    				DomainObject ResultChemicalObj = new DomainObject();
+    				String strVault = "eService Production";
+    				ResultChemicalObj.createObject(context, "CSTC_TestResult_Chemical_MC", ResultChemicalName, "1", "CSTC_TestReq_Sub", strVault);
+    				ResultChemicalObj.setAttributeValue(context, "CSTC_TestReq_SampleId", strTireId);
+    				ResultChemicalObj.addFromObject(context, new RelationshipType( REL_CSTC_TestTire2TestResult ), TestTireId);
+    				ResultChemicalObj.addFromObject(context, new RelationshipType( REL_CSTC_TestReq2TestResult ), TestReqChemicalId);
+    				ResultChemicalObj.addFromObject(context, new RelationshipType( REL_CSTC_TestMethod2TestResult ), TestMethodId);
+    				
+    		    }
+				else if((strTestItemName[j].toString()).equals("EC")){
+    		    	Date d = new Date();    
+    		        SimpleDateFormat sdf = new SimpleDateFormat("yy");  
+    		        String dateNowStr = sdf.format(d);
+    				MxSerialNumberGeneratorDao snDao = new MxSerialNumberGeneratorDao();
+    				FlowContext flowContext = new MxFlowContext(context);
+    				String strPrefix = "RPT-RR-"+dateNowStr;
+    				String serNo = snDao.getSerialNoByKey( flowContext , strPrefix , strPrefix , strPrefix, true );
+    				serNo = String.format("%08d", Integer.parseInt(serNo));
+    				String ResultChemicalName = strPrefix + serNo;
+    				
+    			/*create Result object*/
+    				DomainObject ResultChemicalObj = new DomainObject();
+    				String strVault = "eService Production";
+    				ResultChemicalObj.createObject(context, "CSTC_TestResult_Chemical_EC", ResultChemicalName, "1", "CSTC_TestReq_Sub", strVault);
+    				ResultChemicalObj.setAttributeValue(context, "CSTC_TestReq_SampleId", strTireId);
+    				ResultChemicalObj.addFromObject(context, new RelationshipType( REL_CSTC_TestTire2TestResult ), TestTireId);
+    				ResultChemicalObj.addFromObject(context, new RelationshipType( REL_CSTC_TestReq2TestResult ), TestReqChemicalId);
+    				ResultChemicalObj.addFromObject(context, new RelationshipType( REL_CSTC_TestMethod2TestResult ), TestMethodId);
+    				
+    		    }
+				else if((strTestItemName[j].toString()).equals("QsixR")){
+    		    	Date d = new Date();    
+    		        SimpleDateFormat sdf = new SimpleDateFormat("yy");  
+    		        String dateNowStr = sdf.format(d);
+    				MxSerialNumberGeneratorDao snDao = new MxSerialNumberGeneratorDao();
+    				FlowContext flowContext = new MxFlowContext(context);
+    				String strPrefix = "RPT-RR-"+dateNowStr;
+    				String serNo = snDao.getSerialNoByKey( flowContext , strPrefix , strPrefix , strPrefix, true );
+    				serNo = String.format("%08d", Integer.parseInt(serNo));
+    				String ResultChemicalName = strPrefix + serNo;
+    				
+    			/*create Result object*/
+    				DomainObject ResultChemicalObj = new DomainObject();
+    				String strVault = "eService Production";
+    				ResultChemicalObj.createObject(context, "CSTC_TestResult_Chemical_QsixR", ResultChemicalName, "1", "CSTC_TestReq_Sub", strVault);
+    				ResultChemicalObj.setAttributeValue(context, "CSTC_TestReq_SampleId", strTireId);
+    				ResultChemicalObj.addFromObject(context, new RelationshipType( REL_CSTC_TestTire2TestResult ), TestTireId);
+    				ResultChemicalObj.addFromObject(context, new RelationshipType( REL_CSTC_TestReq2TestResult ), TestReqChemicalId);
+    				ResultChemicalObj.addFromObject(context, new RelationshipType( REL_CSTC_TestMethod2TestResult ), TestMethodId);
+    				
+    		    }
+    		    
+		    }
+			
+		    
+		 /*expand Test Part by TestReq*/
+            StringList busSel3 = new StringList();
+		    busSel3.addElement( DomainObject.SELECT_ID );
+		    StringList relSel3 = new StringList();
+		    relSel3.addElement( DomainRelationship.SELECT_ID );
+		    MapList mplTestPart = TestReqChemicalObj.getRelatedObjects( context
+				, "CSTC_TestReq2TestPart" , "CSTC_TestPart_Chemical"
+				, busSel3, relSel3 , false , true , (short)1 , "" , "" , 0 );
+		    
+		    for(int i = 0;i<mplTestPart.size();i++){
+        	    Map TestPartInfo = (Map)mplTestPart.get(i);
+    		    String TestPartId = (String)TestPartInfo.get("id");
+    		    DomainObject TestPartObj = new DomainObject(TestPartId);
+    		    //get TireId
+    		    String strTireId = TestPartObj.getAttributeValue(context,"CSTC_TestReq_SampleId");
+    		    String strTirePart = TestPartObj.getAttributeValue(context,"CSTC_TestReq_Part");
+    		    
+    		    if((strTestItemName[j].toString()).equals("WholeChemical")){
+                	Date d = new Date();    
+    		        SimpleDateFormat sdf = new SimpleDateFormat("yy");  
+    		        String dateNowStr = sdf.format(d);
+    				MxSerialNumberGeneratorDao snDao = new MxSerialNumberGeneratorDao();
+    				FlowContext flowContext = new MxFlowContext(context);
+    				String strPrefix = "RPT-RR-"+dateNowStr;
+    				String serNo = snDao.getSerialNoByKey( flowContext , strPrefix , strPrefix , strPrefix, true );
+    				serNo = String.format("%08d", Integer.parseInt(serNo));
+    				String ResultChemicalName = strPrefix + serNo;
+    				
+    				
+    			/*create Result object*/
+    				DomainObject ResultChemicalObj = new DomainObject();
+    				String strVault = "eService Production";
+    				ResultChemicalObj.createObject(context, "CSTC_TestResult_Chemical_Whole", ResultChemicalName, "1", "CSTC_TestReq_Sub", strVault);
+    				
+    				ResultChemicalObj.setAttributeValue(context, "CSTC_TestReq_SampleId", strTireId);
+    				ResultChemicalObj.setAttributeValue(context, "CSTC_TireSpec", "");
+    				ResultChemicalObj.setAttributeValue(context, "CSTC_TestReq_Part", strTirePart);
+    				ResultChemicalObj.addFromObject(context, new RelationshipType( REL_CSTC_TestPart2TestResult ), TestPartId);
+    				ResultChemicalObj.addFromObject(context, new RelationshipType( REL_CSTC_TestReq2TestResult ), TestReqChemicalId);
+    				ResultChemicalObj.addFromObject(context, new RelationshipType( REL_CSTC_TestMethod2TestResult ), TestMethodId);
+
+                }
+				else if((strTestItemName[j].toString()).equals("Material")){
+    		    	Date d = new Date();    
+    		        SimpleDateFormat sdf = new SimpleDateFormat("yy");  
+    		        String dateNowStr = sdf.format(d);
+    				MxSerialNumberGeneratorDao snDao = new MxSerialNumberGeneratorDao();
+    				FlowContext flowContext = new MxFlowContext(context);
+    				String strPrefix = "RPT-RR-"+dateNowStr;
+    				String serNo = snDao.getSerialNoByKey( flowContext , strPrefix , strPrefix , strPrefix, true );
+    				serNo = String.format("%08d", Integer.parseInt(serNo));
+    				String ResultChemicalName = strPrefix + serNo;
+    				
+    			/*create Result object*/
+    				DomainObject ResultChemicalObj = new DomainObject();
+    				String strVault = "eService Production";
+    				ResultChemicalObj.createObject(context, "CSTC_TestResult_Chemical_Material", ResultChemicalName, "1", "CSTC_TestReq_Sub", strVault);
+    				ResultChemicalObj.setAttributeValue(context, "CSTC_TestReq_SampleId", strTireId);
+    				ResultChemicalObj.addFromObject(context, new RelationshipType( REL_CSTC_TestPart2TestResult ), TestPartId);
+    				ResultChemicalObj.addFromObject(context, new RelationshipType( REL_CSTC_TestReq2TestResult ), TestReqChemicalId);
+    				ResultChemicalObj.addFromObject(context, new RelationshipType( REL_CSTC_TestMethod2TestResult ), TestMethodId);
+    				
+    		    }
+				else if((strTestItemName[j].toString()).equals("Deformulation")){
+    		    	Date d = new Date();    
+    		        SimpleDateFormat sdf = new SimpleDateFormat("yy");  
+    		        String dateNowStr = sdf.format(d);
+    				MxSerialNumberGeneratorDao snDao = new MxSerialNumberGeneratorDao();
+    				FlowContext flowContext = new MxFlowContext(context);
+    				String strPrefix = "RPT-RR-"+dateNowStr;
+    				String serNo = snDao.getSerialNoByKey( flowContext , strPrefix , strPrefix , strPrefix, true );
+    				serNo = String.format("%08d", Integer.parseInt(serNo));
+    				String ResultChemicalName = strPrefix + serNo;
+    				
+    			/*create Result object*/
+    				DomainObject ResultChemicalObj = new DomainObject();
+    				String strVault = "eService Production";
+    				ResultChemicalObj.createObject(context, "CSTC_TestResult_Chemical_Whole", ResultChemicalName, "1", "CSTC_TestReq_Sub", strVault);
+    				ResultChemicalObj.setAttributeValue(context, "CSTC_TestReq_SampleId", strTireId);
+    				ResultChemicalObj.addFromObject(context, new RelationshipType( REL_CSTC_TestPart2TestResult ), TestPartId);
+    				ResultChemicalObj.addFromObject(context, new RelationshipType( REL_CSTC_TestReq2TestResult ), TestReqChemicalId);
+    				ResultChemicalObj.addFromObject(context, new RelationshipType( REL_CSTC_TestMethod2TestResult ), TestMethodId);
+    				
+    		    }
+			
+				else if((strTestItemName[j].toString()).equals("Phase")){
+    		    	Date d = new Date();    
+    		        SimpleDateFormat sdf = new SimpleDateFormat("yy");  
+    		        String dateNowStr = sdf.format(d);
+    				MxSerialNumberGeneratorDao snDao = new MxSerialNumberGeneratorDao();
+    				FlowContext flowContext = new MxFlowContext(context);
+    				String strPrefix = "RPT-RR-"+dateNowStr;
+    				String serNo = snDao.getSerialNoByKey( flowContext , strPrefix , strPrefix , strPrefix, true );
+    				serNo = String.format("%08d", Integer.parseInt(serNo));
+    				String ResultChemicalName = strPrefix + serNo;
+    				
+    			/*create Result object*/
+    				DomainObject ResultChemicalObj = new DomainObject();
+    				String strVault = "eService Production";
+    				ResultChemicalObj.createObject(context, "CSTC_TestResult_Chemical_Phase", ResultChemicalName, "1", "CSTC_TestReq_Sub", strVault);
+    				ResultChemicalObj.setAttributeValue(context, "CSTC_TestReq_SampleId", strTireId);
+    				ResultChemicalObj.addFromObject(context, new RelationshipType( REL_CSTC_TestPart2TestResult ), TestPartId);
+    				ResultChemicalObj.addFromObject(context, new RelationshipType( REL_CSTC_TestReq2TestResult ), TestReqChemicalId);
+    				ResultChemicalObj.addFromObject(context, new RelationshipType( REL_CSTC_TestMethod2TestResult ), TestMethodId);
+    				
+    		    }
+				else if((strTestItemName[j].toString()).equals("Microstructure")){
+    		    	Date d = new Date();    
+    		        SimpleDateFormat sdf = new SimpleDateFormat("yy");  
+    		        String dateNowStr = sdf.format(d);
+    				MxSerialNumberGeneratorDao snDao = new MxSerialNumberGeneratorDao();
+    				FlowContext flowContext = new MxFlowContext(context);
+    				String strPrefix = "RPT-RR-"+dateNowStr;
+    				String serNo = snDao.getSerialNoByKey( flowContext , strPrefix , strPrefix , strPrefix, true );
+    				serNo = String.format("%08d", Integer.parseInt(serNo));
+    				String ResultChemicalName = strPrefix + serNo;
+    				
+    			/*create Result object*/
+    				DomainObject ResultChemicalObj = new DomainObject();
+    				String strVault = "eService Production";
+    				ResultChemicalObj.createObject(context, "CSTC_TestResult_Chemical_Microstructure", ResultChemicalName, "1", "CSTC_TestReq_Sub", strVault);
+    				ResultChemicalObj.setAttributeValue(context, "CSTC_TestReq_SampleId", strTireId);
+    				ResultChemicalObj.addFromObject(context, new RelationshipType( REL_CSTC_TestPart2TestResult ), TestPartId);
+    				ResultChemicalObj.addFromObject(context, new RelationshipType( REL_CSTC_TestReq2TestResult ), TestReqChemicalId);
+    				ResultChemicalObj.addFromObject(context, new RelationshipType( REL_CSTC_TestMethod2TestResult ), TestMethodId);
+    				
+    		    }
+				else if((strTestItemName[j].toString()).equals("Purity")){
+    		    	Date d = new Date();    
+    		        SimpleDateFormat sdf = new SimpleDateFormat("yy");  
+    		        String dateNowStr = sdf.format(d);
+    				MxSerialNumberGeneratorDao snDao = new MxSerialNumberGeneratorDao();
+    				FlowContext flowContext = new MxFlowContext(context);
+    				String strPrefix = "RPT-RR-"+dateNowStr;
+    				String serNo = snDao.getSerialNoByKey( flowContext , strPrefix , strPrefix , strPrefix, true );
+    				serNo = String.format("%08d", Integer.parseInt(serNo));
+    				String ResultChemicalName = strPrefix + serNo;
+    				
+    			/*create Result object*/
+    				DomainObject ResultChemicalObj = new DomainObject();
+    				String strVault = "eService Production";
+    				ResultChemicalObj.createObject(context, "CSTC_TestResult_Chemical_Purity", ResultChemicalName, "1", "CSTC_TestReq_Sub", strVault);
+    				ResultChemicalObj.setAttributeValue(context, "CSTC_TestReq_SampleId", strTireId);
+    				ResultChemicalObj.addFromObject(context, new RelationshipType( REL_CSTC_TestPart2TestResult ), TestPartId);
+    				ResultChemicalObj.addFromObject(context, new RelationshipType( REL_CSTC_TestReq2TestResult ), TestReqChemicalId);
+    				ResultChemicalObj.addFromObject(context, new RelationshipType( REL_CSTC_TestMethod2TestResult ), TestMethodId);
+    				
+    		    }
+				else if((strTestItemName[j].toString()).equals("AP")){
+    		    	Date d = new Date();    
+    		        SimpleDateFormat sdf = new SimpleDateFormat("yy");  
+    		        String dateNowStr = sdf.format(d);
+    				MxSerialNumberGeneratorDao snDao = new MxSerialNumberGeneratorDao();
+    				FlowContext flowContext = new MxFlowContext(context);
+    				String strPrefix = "RPT-RR-"+dateNowStr;
+    				String serNo = snDao.getSerialNoByKey( flowContext , strPrefix , strPrefix , strPrefix, true );
+    				serNo = String.format("%08d", Integer.parseInt(serNo));
+    				String ResultChemicalName = strPrefix + serNo;
+    				
+    			/*create Result object*/
+    				DomainObject ResultChemicalObj = new DomainObject();
+    				String strVault = "eService Production";
+    				ResultChemicalObj.createObject(context, "CSTC_TestResult_Chemical_AntioxidantPurity", ResultChemicalName, "1", "CSTC_TestReq_Sub", strVault);
+    				ResultChemicalObj.setAttributeValue(context, "CSTC_TestReq_SampleId", strTireId);
+    				ResultChemicalObj.addFromObject(context, new RelationshipType( REL_CSTC_TestPart2TestResult ), TestPartId);
+    				ResultChemicalObj.addFromObject(context, new RelationshipType( REL_CSTC_TestReq2TestResult ), TestReqChemicalId);
+    				ResultChemicalObj.addFromObject(context, new RelationshipType( REL_CSTC_TestMethod2TestResult ), TestMethodId);
+    				
+    		    }
+				else if((strTestItemName[j].toString()).equals("SWD")){
+    		    	Date d = new Date();    
+    		        SimpleDateFormat sdf = new SimpleDateFormat("yy");  
+    		        String dateNowStr = sdf.format(d);
+    				MxSerialNumberGeneratorDao snDao = new MxSerialNumberGeneratorDao();
+    				FlowContext flowContext = new MxFlowContext(context);
+    				String strPrefix = "RPT-RR-"+dateNowStr;
+    				String serNo = snDao.getSerialNoByKey( flowContext , strPrefix , strPrefix , strPrefix, true );
+    				serNo = String.format("%08d", Integer.parseInt(serNo));
+    				String ResultChemicalName = strPrefix + serNo;
+    				
+    			/*create Result object*/
+    				DomainObject ResultChemicalObj = new DomainObject();
+    				String strVault = "eService Production";
+    				ResultChemicalObj.createObject(context, "CSTC_TestResult_Chemical_SWD", ResultChemicalName, "1", "CSTC_TestReq_Sub", strVault);
+    				ResultChemicalObj.setAttributeValue(context, "CSTC_TestReq_SampleId", strTireId);
+    				ResultChemicalObj.addFromObject(context, new RelationshipType( REL_CSTC_TestPart2TestResult ), TestPartId);
+    				ResultChemicalObj.addFromObject(context, new RelationshipType( REL_CSTC_TestReq2TestResult ), TestReqChemicalId);
+    				ResultChemicalObj.addFromObject(context, new RelationshipType( REL_CSTC_TestMethod2TestResult ), TestMethodId);
+				}
+				else if((strTestItemName[j].toString()).equals("SSA")){
+    		    	Date d = new Date();    
+    		        SimpleDateFormat sdf = new SimpleDateFormat("yy");  
+    		        String dateNowStr = sdf.format(d);
+    				MxSerialNumberGeneratorDao snDao = new MxSerialNumberGeneratorDao();
+    				FlowContext flowContext = new MxFlowContext(context);
+    				String strPrefix = "RPT-RR-"+dateNowStr;
+    				String serNo = snDao.getSerialNoByKey( flowContext , strPrefix , strPrefix , strPrefix, true );
+    				serNo = String.format("%08d", Integer.parseInt(serNo));
+    				String ResultChemicalName = strPrefix + serNo;
+    				
+    			/*create Result object*/
+    				DomainObject ResultChemicalObj = new DomainObject();
+    				String strVault = "eService Production";
+    				ResultChemicalObj.createObject(context, "CSTC_TestResult_Chemical_SSA", ResultChemicalName, "1", "CSTC_TestReq_Sub", strVault);
+    				ResultChemicalObj.setAttributeValue(context, "CSTC_TestReq_SampleId", strTireId);
+    				ResultChemicalObj.addFromObject(context, new RelationshipType( REL_CSTC_TestPart2TestResult ), TestPartId);
+    				ResultChemicalObj.addFromObject(context, new RelationshipType( REL_CSTC_TestReq2TestResult ), TestReqChemicalId);
+    				ResultChemicalObj.addFromObject(context, new RelationshipType( REL_CSTC_TestMethod2TestResult ), TestMethodId);
+    				
+    		    }
+				else if((strTestItemName[j].toString()).equals("DPU")){
+    		    	Date d = new Date();    
+    		        SimpleDateFormat sdf = new SimpleDateFormat("yy");  
+    		        String dateNowStr = sdf.format(d);
+    				MxSerialNumberGeneratorDao snDao = new MxSerialNumberGeneratorDao();
+    				FlowContext flowContext = new MxFlowContext(context);
+    				String strPrefix = "RPT-RR-"+dateNowStr;
+    				String serNo = snDao.getSerialNoByKey( flowContext , strPrefix , strPrefix , strPrefix, true );
+    				serNo = String.format("%08d", Integer.parseInt(serNo));
+    				String ResultChemicalName = strPrefix + serNo;
+					
+    			/*create Result object*/
+    				DomainObject ResultChemicalObj = new DomainObject();
+    				String strVault = "eService Production";
+    				ResultChemicalObj.createObject(context, "CSTC_TestResult_Chemical_DPU", ResultChemicalName, "1", "CSTC_TestReq_Sub", strVault);
+    				ResultChemicalObj.setAttributeValue(context, "CSTC_TestReq_SampleId", strTireId);
+    				ResultChemicalObj.addFromObject(context, new RelationshipType( REL_CSTC_TestPart2TestResult ), TestPartId);
+    				ResultChemicalObj.addFromObject(context, new RelationshipType( REL_CSTC_TestReq2TestResult ), TestReqChemicalId);
+    				ResultChemicalObj.addFromObject(context, new RelationshipType( REL_CSTC_TestMethod2TestResult ), TestMethodId);
+    				
+		   
+    		    }
+				else if((strTestItemName[j].toString()).equals("QoneR")){
+    		    	Date d = new Date();    
+    		        SimpleDateFormat sdf = new SimpleDateFormat("yy");  
+    		        String dateNowStr = sdf.format(d);
+    				MxSerialNumberGeneratorDao snDao = new MxSerialNumberGeneratorDao();
+    				FlowContext flowContext = new MxFlowContext(context);
+    				String strPrefix = "RPT-RR-"+dateNowStr;
+    				String serNo = snDao.getSerialNoByKey( flowContext , strPrefix , strPrefix , strPrefix, true );
+    				serNo = String.format("%08d", Integer.parseInt(serNo));
+    				String ResultChemicalName = strPrefix + serNo;
+					
+    			/*create Result object*/
+    				DomainObject ResultChemicalObj = new DomainObject();
+    				String strVault = "eService Production";
+    				ResultChemicalObj.createObject(context, "CSTC_TestResult_Chemical_QoneR", ResultChemicalName, "1", "CSTC_TestReq_Sub", strVault);
+    				ResultChemicalObj.setAttributeValue(context, "CSTC_TestReq_SampleId", strTireId);
+    				ResultChemicalObj.addFromObject(context, new RelationshipType( REL_CSTC_TestPart2TestResult ), TestPartId);
+    				ResultChemicalObj.addFromObject(context, new RelationshipType( REL_CSTC_TestReq2TestResult ), TestReqChemicalId);
+    				ResultChemicalObj.addFromObject(context, new RelationshipType( REL_CSTC_TestMethod2TestResult ), TestMethodId);
+    				
+		   
+    		    }
+				else if((strTestItemName[j].toString()).equals("QtwoR")){
+    		    	Date d = new Date();    
+    		        SimpleDateFormat sdf = new SimpleDateFormat("yy");  
+    		        String dateNowStr = sdf.format(d);
+    				MxSerialNumberGeneratorDao snDao = new MxSerialNumberGeneratorDao();
+    				FlowContext flowContext = new MxFlowContext(context);
+    				String strPrefix = "RPT-RR-"+dateNowStr;
+    				String serNo = snDao.getSerialNoByKey( flowContext , strPrefix , strPrefix , strPrefix, true );
+    				serNo = String.format("%08d", Integer.parseInt(serNo));
+    				String ResultChemicalName = strPrefix + serNo;
+					
+    			/*create Result object*/
+    				DomainObject ResultChemicalObj = new DomainObject();
+    				String strVault = "eService Production";
+    				ResultChemicalObj.createObject(context, "CSTC_TestResult_Chemical_QtwoR", ResultChemicalName, "1", "CSTC_TestReq_Sub", strVault);
+    				ResultChemicalObj.setAttributeValue(context, "CSTC_TestReq_SampleId", strTireId);
+    				ResultChemicalObj.addFromObject(context, new RelationshipType( REL_CSTC_TestPart2TestResult ), TestPartId);
+    				ResultChemicalObj.addFromObject(context, new RelationshipType( REL_CSTC_TestReq2TestResult ), TestReqChemicalId);
+    				ResultChemicalObj.addFromObject(context, new RelationshipType( REL_CSTC_TestMethod2TestResult ), TestMethodId);
+    				
+		   
+    		    }
+				else if((strTestItemName[j].toString()).equals("QthreeR")){
+    		    	Date d = new Date();    
+    		        SimpleDateFormat sdf = new SimpleDateFormat("yy");  
+    		        String dateNowStr = sdf.format(d);
+    				MxSerialNumberGeneratorDao snDao = new MxSerialNumberGeneratorDao();
+    				FlowContext flowContext = new MxFlowContext(context);
+    				String strPrefix = "RPT-RR-"+dateNowStr;
+    				String serNo = snDao.getSerialNoByKey( flowContext , strPrefix , strPrefix , strPrefix, true );
+    				serNo = String.format("%08d", Integer.parseInt(serNo));
+    				String ResultChemicalName = strPrefix + serNo;
+					
+    			/*create Result object*/
+    				DomainObject ResultChemicalObj = new DomainObject();
+    				String strVault = "eService Production";
+    				ResultChemicalObj.createObject(context, "CSTC_TestResult_Chemical_QthreeR", ResultChemicalName, "1", "CSTC_TestReq_Sub", strVault);
+    				ResultChemicalObj.setAttributeValue(context, "CSTC_TestReq_SampleId", strTireId);
+    				ResultChemicalObj.addFromObject(context, new RelationshipType( REL_CSTC_TestPart2TestResult ), TestPartId);
+    				ResultChemicalObj.addFromObject(context, new RelationshipType( REL_CSTC_TestReq2TestResult ), TestReqChemicalId);
+    				ResultChemicalObj.addFromObject(context, new RelationshipType( REL_CSTC_TestMethod2TestResult ), TestMethodId);
+    				
+		   
+    		    }
+				else if((strTestItemName[j].toString()).equals("QfourR")){
+    		    	Date d = new Date();    
+    		        SimpleDateFormat sdf = new SimpleDateFormat("yy");  
+    		        String dateNowStr = sdf.format(d);
+    				MxSerialNumberGeneratorDao snDao = new MxSerialNumberGeneratorDao();
+    				FlowContext flowContext = new MxFlowContext(context);
+    				String strPrefix = "RPT-RR-"+dateNowStr;
+    				String serNo = snDao.getSerialNoByKey( flowContext , strPrefix , strPrefix , strPrefix, true );
+    				serNo = String.format("%08d", Integer.parseInt(serNo));
+    				String ResultChemicalName = strPrefix + serNo;
+					
+    			/*create Result object*/
+    				DomainObject ResultChemicalObj = new DomainObject();
+    				String strVault = "eService Production";
+    				ResultChemicalObj.createObject(context, "CSTC_TestResult_Chemical_QfourR", ResultChemicalName, "1", "CSTC_TestReq_Sub", strVault);
+    				ResultChemicalObj.setAttributeValue(context, "CSTC_TestReq_SampleId", strTireId);
+    				ResultChemicalObj.addFromObject(context, new RelationshipType( REL_CSTC_TestPart2TestResult ), TestPartId);
+    				ResultChemicalObj.addFromObject(context, new RelationshipType( REL_CSTC_TestReq2TestResult ), TestReqChemicalId);
+    				ResultChemicalObj.addFromObject(context, new RelationshipType( REL_CSTC_TestMethod2TestResult ), TestMethodId);
+    				
+		   
+    		    }
+				else if((strTestItemName[j].toString()).equals("QfiveR")){
+    		    	Date d = new Date();    
+    		        SimpleDateFormat sdf = new SimpleDateFormat("yy");  
+    		        String dateNowStr = sdf.format(d);
+    				MxSerialNumberGeneratorDao snDao = new MxSerialNumberGeneratorDao();
+    				FlowContext flowContext = new MxFlowContext(context);
+    				String strPrefix = "RPT-RR-"+dateNowStr;
+    				String serNo = snDao.getSerialNoByKey( flowContext , strPrefix , strPrefix , strPrefix, true );
+    				serNo = String.format("%08d", Integer.parseInt(serNo));
+    				String ResultChemicalName = strPrefix + serNo;
+					
+    			/*create Result object*/
+    				DomainObject ResultChemicalObj = new DomainObject();
+    				String strVault = "eService Production";
+    				ResultChemicalObj.createObject(context, "CSTC_TestResult_Chemical_QfiveR", ResultChemicalName, "1", "CSTC_TestReq_Sub", strVault);
+    				ResultChemicalObj.setAttributeValue(context, "CSTC_TestReq_SampleId", strTireId);
+    				ResultChemicalObj.addFromObject(context, new RelationshipType( REL_CSTC_TestPart2TestResult ), TestPartId);
+    				ResultChemicalObj.addFromObject(context, new RelationshipType( REL_CSTC_TestReq2TestResult ), TestReqChemicalId);
+    				ResultChemicalObj.addFromObject(context, new RelationshipType( REL_CSTC_TestMethod2TestResult ), TestMethodId);
+    				
+		   
+    		    }
+				else if((strTestItemName[j].toString()).equals("Other")){
+    		    	Date d = new Date();    
+    		        SimpleDateFormat sdf = new SimpleDateFormat("yy");  
+    		        String dateNowStr = sdf.format(d);
+    				MxSerialNumberGeneratorDao snDao = new MxSerialNumberGeneratorDao();
+    				FlowContext flowContext = new MxFlowContext(context);
+    				String strPrefix = "RPT-RR-"+dateNowStr;
+    				String serNo = snDao.getSerialNoByKey( flowContext , strPrefix , strPrefix , strPrefix, true );
+    				serNo = String.format("%08d", Integer.parseInt(serNo));
+    				String ResultChemicalName = strPrefix + serNo;
+					
+    			/*create Result object*/
+    				DomainObject ResultChemicalObj = new DomainObject();
+    				String strVault = "eService Production";
+    				ResultChemicalObj.createObject(context, "CSTC_TestResult_Chemical_Other", ResultChemicalName, "1", "CSTC_TestReq_Sub", strVault);
+    				ResultChemicalObj.setAttributeValue(context, "CSTC_TestReq_SampleId", strTireId);
+    				ResultChemicalObj.addFromObject(context, new RelationshipType( REL_CSTC_TestPart2TestResult ), TestPartId);
+    				ResultChemicalObj.addFromObject(context, new RelationshipType( REL_CSTC_TestReq2TestResult ), TestReqChemicalId);
+    				ResultChemicalObj.addFromObject(context, new RelationshipType( REL_CSTC_TestMethod2TestResult ), TestMethodId);
+    				
+		   
+    		    }
+				else if((strTestItemName[j].toString()).equals("SBR")){
+    		    	Date d = new Date();    
+    		        SimpleDateFormat sdf = new SimpleDateFormat("yy");  
+    		        String dateNowStr = sdf.format(d);
+    				MxSerialNumberGeneratorDao snDao = new MxSerialNumberGeneratorDao();
+    				FlowContext flowContext = new MxFlowContext(context);
+    				String strPrefix = "RPT-RR-"+dateNowStr;
+    				String serNo = snDao.getSerialNoByKey( flowContext , strPrefix , strPrefix , strPrefix, true );
+    				serNo = String.format("%08d", Integer.parseInt(serNo));
+    				String ResultChemicalName = strPrefix + serNo;
+    				
+    			/*create Result object*/
+    				DomainObject ResultChemicalObj = new DomainObject();
+    				String strVault = "eService Production";
+    				ResultChemicalObj.createObject(context, "CSTC_TestResult_Chemical_SBR", ResultChemicalName, "1", "CSTC_TestReq_Sub", strVault);
+    				ResultChemicalObj.setAttributeValue(context, "CSTC_TestReq_SampleId", strTireId);
+    				ResultChemicalObj.addFromObject(context, new RelationshipType( REL_CSTC_TestPart2TestResult ), TestPartId);
+    				ResultChemicalObj.addFromObject(context, new RelationshipType( REL_CSTC_TestReq2TestResult ), TestReqChemicalId);
+    				ResultChemicalObj.addFromObject(context, new RelationshipType( REL_CSTC_TestMethod2TestResult ), TestMethodId);
+    				
+    		    }
+				else if((strTestItemName[j].toString()).equals("Antioxidant")){
+    		    	Date d = new Date();    
+    		        SimpleDateFormat sdf = new SimpleDateFormat("yy");  
+    		        String dateNowStr = sdf.format(d);
+    				MxSerialNumberGeneratorDao snDao = new MxSerialNumberGeneratorDao();
+    				FlowContext flowContext = new MxFlowContext(context);
+    				String strPrefix = "RPT-RR-"+dateNowStr;
+    				String serNo = snDao.getSerialNoByKey( flowContext , strPrefix , strPrefix , strPrefix, true );
+    				serNo = String.format("%08d", Integer.parseInt(serNo));
+    				String ResultChemicalName = strPrefix + serNo;
+    				
+    			/*create Result object*/
+    				DomainObject ResultChemicalObj = new DomainObject();
+    				String strVault = "eService Production";
+    				ResultChemicalObj.createObject(context, "CSTC_TestResult_Chemical_HPLC", ResultChemicalName, "1", "CSTC_TestReq_Sub", strVault);
+    				ResultChemicalObj.setAttributeValue(context, "CSTC_TestReq_SampleId", strTireId);
+    				ResultChemicalObj.addFromObject(context, new RelationshipType( REL_CSTC_TestPart2TestResult ), TestPartId);
+    				ResultChemicalObj.addFromObject(context, new RelationshipType( REL_CSTC_TestReq2TestResult ), TestReqChemicalId);
+    				ResultChemicalObj.addFromObject(context, new RelationshipType( REL_CSTC_TestMethod2TestResult ), TestMethodId);
+    				
+    		    }
+				else if((strTestItemName[j].toString()).equals("QA")){
+    		    	Date d = new Date();    
+    		        SimpleDateFormat sdf = new SimpleDateFormat("yy");  
+    		        String dateNowStr = sdf.format(d);
+    				MxSerialNumberGeneratorDao snDao = new MxSerialNumberGeneratorDao();
+    				FlowContext flowContext = new MxFlowContext(context);
+    				String strPrefix = "RPT-RR-"+dateNowStr;
+    				String serNo = snDao.getSerialNoByKey( flowContext , strPrefix , strPrefix , strPrefix, true );
+    				serNo = String.format("%08d", Integer.parseInt(serNo));
+    				String ResultChemicalName = strPrefix + serNo;
+    				
+    			/*create Result object*/
+    				DomainObject ResultChemicalObj = new DomainObject();
+    				String strVault = "eService Production";
+    				ResultChemicalObj.createObject(context, "CSTC_TestResult_Chemical_QA", ResultChemicalName, "1", "CSTC_TestReq_Sub", strVault);
+    				ResultChemicalObj.setAttributeValue(context, "CSTC_TestReq_SampleId", strTireId);
+    				ResultChemicalObj.addFromObject(context, new RelationshipType( REL_CSTC_TestPart2TestResult ), TestPartId);
+    				ResultChemicalObj.addFromObject(context, new RelationshipType( REL_CSTC_TestReq2TestResult ), TestReqChemicalId);
+    				ResultChemicalObj.addFromObject(context, new RelationshipType( REL_CSTC_TestMethod2TestResult ), TestMethodId);
+    				
+    		    }else if((strTestItemName[j].toString()).equals("DSCTg")){
+    		    	Date d = new Date();    
+    		        SimpleDateFormat sdf = new SimpleDateFormat("yy");  
+    		        String dateNowStr = sdf.format(d);
+    				MxSerialNumberGeneratorDao snDao = new MxSerialNumberGeneratorDao();
+    				FlowContext flowContext = new MxFlowContext(context);
+    				String strPrefix = "RPT-RR-"+dateNowStr;
+    				String serNo = snDao.getSerialNoByKey( flowContext , strPrefix , strPrefix , strPrefix, true );
+    				serNo = String.format("%08d", Integer.parseInt(serNo));
+    				String ResultChemicalName = strPrefix + serNo;
+    				
+    			/*create Result object*/
+    				DomainObject ResultChemicalObj = new DomainObject();
+    				String strVault = "eService Production";
+    				ResultChemicalObj.createObject(context, "CSTC_TestResult_Chemical_DSCTg", ResultChemicalName, "1", "CSTC_TestReq_Sub", strVault);
+    				ResultChemicalObj.setAttributeValue(context, "CSTC_TestReq_SampleId", strTireId);
+    				ResultChemicalObj.addFromObject(context, new RelationshipType( REL_CSTC_TestPart2TestResult ), TestPartId);
+    				ResultChemicalObj.addFromObject(context, new RelationshipType( REL_CSTC_TestReq2TestResult ), TestReqChemicalId);
+    				ResultChemicalObj.addFromObject(context, new RelationshipType( REL_CSTC_TestMethod2TestResult ), TestMethodId);
+    				
+    		    }else if((strTestItemName[j].toString()).equals("DSCTm")){
+    		    	Date d = new Date();    
+    		        SimpleDateFormat sdf = new SimpleDateFormat("yy");  
+    		        String dateNowStr = sdf.format(d);
+    				MxSerialNumberGeneratorDao snDao = new MxSerialNumberGeneratorDao();
+    				FlowContext flowContext = new MxFlowContext(context);
+    				String strPrefix = "RPT-RR-"+dateNowStr;
+    				String serNo = snDao.getSerialNoByKey( flowContext , strPrefix , strPrefix , strPrefix, true );
+    				serNo = String.format("%08d", Integer.parseInt(serNo));
+    				String ResultChemicalName = strPrefix + serNo;
+    				
+    			/*create Result object*/
+    				DomainObject ResultChemicalObj = new DomainObject();
+    				String strVault = "eService Production";
+    				ResultChemicalObj.createObject(context, "CSTC_TestResult_Chemical_DSCTm", ResultChemicalName, "1", "CSTC_TestReq_Sub", strVault);
+    				ResultChemicalObj.setAttributeValue(context, "CSTC_TestReq_SampleId", strTireId);
+    				ResultChemicalObj.addFromObject(context, new RelationshipType( REL_CSTC_TestPart2TestResult ), TestPartId);
+    				ResultChemicalObj.addFromObject(context, new RelationshipType( REL_CSTC_TestReq2TestResult ), TestReqChemicalId);
+    				ResultChemicalObj.addFromObject(context, new RelationshipType( REL_CSTC_TestMethod2TestResult ), TestMethodId);
+    				
+    		    }else if((strTestItemName[j].toString()).equals("TGA")){
+    		    	Date d = new Date();    
+    		        SimpleDateFormat sdf = new SimpleDateFormat("yy");  
+    		        String dateNowStr = sdf.format(d);
+    				MxSerialNumberGeneratorDao snDao = new MxSerialNumberGeneratorDao();
+    				FlowContext flowContext = new MxFlowContext(context);
+    				String strPrefix = "RPT-RR-"+dateNowStr;
+    				String serNo = snDao.getSerialNoByKey( flowContext , strPrefix , strPrefix , strPrefix, true );
+    				serNo = String.format("%08d", Integer.parseInt(serNo));
+    				String ResultChemicalName = strPrefix + serNo;
+    				
+    			/*create Result object*/
+    				DomainObject ResultChemicalObj = new DomainObject();
+    				String strVault = "eService Production";
+    				ResultChemicalObj.createObject(context, "CSTC_TestResult_Chemical_TGA", ResultChemicalName, "1", "CSTC_TestReq_Sub", strVault);
+    				ResultChemicalObj.setAttributeValue(context, "CSTC_TestReq_SampleId", strTireId);
+    				ResultChemicalObj.addFromObject(context, new RelationshipType( REL_CSTC_TestPart2TestResult ), TestPartId);
+    				ResultChemicalObj.addFromObject(context, new RelationshipType( REL_CSTC_TestReq2TestResult ), TestReqChemicalId);
+    				ResultChemicalObj.addFromObject(context, new RelationshipType( REL_CSTC_TestMethod2TestResult ), TestMethodId);
+    				
+    		    }else if((strTestItemName[j].toString()).equals("S144DR")){
+    		    	Date d = new Date();    
+    		        SimpleDateFormat sdf = new SimpleDateFormat("yy");  
+    		        String dateNowStr = sdf.format(d);
+    				MxSerialNumberGeneratorDao snDao = new MxSerialNumberGeneratorDao();
+    				FlowContext flowContext = new MxFlowContext(context);
+    				String strPrefix = "RPT-RR-"+dateNowStr;
+    				String serNo = snDao.getSerialNoByKey( flowContext , strPrefix , strPrefix , strPrefix, true );
+    				serNo = String.format("%08d", Integer.parseInt(serNo));
+    				String ResultChemicalName = strPrefix + serNo;
+    				
+    			/*create Result object*/
+    				DomainObject ResultChemicalObj = new DomainObject();
+    				String strVault = "eService Production";
+    				ResultChemicalObj.createObject(context, "CSTC_TestResult_Chemical_S144DR", ResultChemicalName, "1", "CSTC_TestReq_Sub", strVault);
+    				ResultChemicalObj.setAttributeValue(context, "CSTC_TestReq_SampleId", strTireId);
+    				ResultChemicalObj.addFromObject(context, new RelationshipType( REL_CSTC_TestPart2TestResult ), TestPartId);
+    				ResultChemicalObj.addFromObject(context, new RelationshipType( REL_CSTC_TestReq2TestResult ), TestReqChemicalId);
+    				ResultChemicalObj.addFromObject(context, new RelationshipType( REL_CSTC_TestMethod2TestResult ), TestMethodId);
+    				
+    		    }else if((strTestItemName[j].toString()).equals("GPC")){
+    		    	Date d = new Date();    
+    		        SimpleDateFormat sdf = new SimpleDateFormat("yy");  
+    		        String dateNowStr = sdf.format(d);
+    				MxSerialNumberGeneratorDao snDao = new MxSerialNumberGeneratorDao();
+    				FlowContext flowContext = new MxFlowContext(context);
+    				String strPrefix = "RPT-RR-"+dateNowStr;
+    				String serNo = snDao.getSerialNoByKey( flowContext , strPrefix , strPrefix , strPrefix, true );
+    				serNo = String.format("%08d", Integer.parseInt(serNo));
+    				String ResultChemicalName = strPrefix + serNo;
+    				
+    			/*create Result object*/
+    				DomainObject ResultChemicalObj = new DomainObject();
+    				String strVault = "eService Production";
+    				ResultChemicalObj.createObject(context, "CSTC_TestResult_Chemical_GPC", ResultChemicalName, "1", "CSTC_TestReq_Sub", strVault);
+    				ResultChemicalObj.setAttributeValue(context, "CSTC_TestReq_SampleId", strTireId);
+    				ResultChemicalObj.addFromObject(context, new RelationshipType( REL_CSTC_TestPart2TestResult ), TestPartId);
+    				ResultChemicalObj.addFromObject(context, new RelationshipType( REL_CSTC_TestReq2TestResult ), TestReqChemicalId);
+    				ResultChemicalObj.addFromObject(context, new RelationshipType( REL_CSTC_TestMethod2TestResult ), TestMethodId);
+    				
+    		    }else if((strTestItemName[j].toString()).equals("PGC")){
+    		    	Date d = new Date();    
+    		        SimpleDateFormat sdf = new SimpleDateFormat("yy");  
+    		        String dateNowStr = sdf.format(d);
+    				MxSerialNumberGeneratorDao snDao = new MxSerialNumberGeneratorDao();
+    				FlowContext flowContext = new MxFlowContext(context);
+    				String strPrefix = "RPT-RR-"+dateNowStr;
+    				String serNo = snDao.getSerialNoByKey( flowContext , strPrefix , strPrefix , strPrefix, true );
+    				serNo = String.format("%08d", Integer.parseInt(serNo));
+    				String ResultChemicalName = strPrefix + serNo;
+    				
+    			/*create Result object*/
+    				DomainObject ResultChemicalObj = new DomainObject();
+    				String strVault = "eService Production";
+    				ResultChemicalObj.createObject(context, "CSTC_TestResult_Chemical_PGC", ResultChemicalName, "1", "CSTC_TestReq_Sub", strVault);
+    				ResultChemicalObj.setAttributeValue(context, "CSTC_TestReq_SampleId", strTireId);
+    				ResultChemicalObj.addFromObject(context, new RelationshipType( REL_CSTC_TestPart2TestResult ), TestPartId);
+    				ResultChemicalObj.addFromObject(context, new RelationshipType( REL_CSTC_TestReq2TestResult ), TestReqChemicalId);
+    				ResultChemicalObj.addFromObject(context, new RelationshipType( REL_CSTC_TestMethod2TestResult ), TestMethodId);
+    				
+    		    }else if((strTestItemName[j].toString()).equals("GC")){
+    		    	Date d = new Date();    
+    		        SimpleDateFormat sdf = new SimpleDateFormat("yy");  
+    		        String dateNowStr = sdf.format(d);
+    				MxSerialNumberGeneratorDao snDao = new MxSerialNumberGeneratorDao();
+    				FlowContext flowContext = new MxFlowContext(context);
+    				String strPrefix = "RPT-RR-"+dateNowStr;
+    				String serNo = snDao.getSerialNoByKey( flowContext , strPrefix , strPrefix , strPrefix, true );
+    				serNo = String.format("%08d", Integer.parseInt(serNo));
+    				String ResultChemicalName = strPrefix + serNo;
+    				
+    			/*create Result object*/
+    				DomainObject ResultChemicalObj = new DomainObject();
+    				String strVault = "eService Production";
+    				ResultChemicalObj.createObject(context, "CSTC_TestResult_Chemical_GC", ResultChemicalName, "1", "CSTC_TestReq_Sub", strVault);
+    				ResultChemicalObj.setAttributeValue(context, "CSTC_TestReq_SampleId", strTireId);
+    				ResultChemicalObj.addFromObject(context, new RelationshipType( REL_CSTC_TestPart2TestResult ), TestPartId);
+    				ResultChemicalObj.addFromObject(context, new RelationshipType( REL_CSTC_TestReq2TestResult ), TestReqChemicalId);
+    				ResultChemicalObj.addFromObject(context, new RelationshipType( REL_CSTC_TestMethod2TestResult ), TestMethodId);
+    				
+    		    }else if((strTestItemName[j].toString()).equals("DOSCAR")){
+    		    	Date d = new Date();    
+    		        SimpleDateFormat sdf = new SimpleDateFormat("yy");  
+    		        String dateNowStr = sdf.format(d);
+    				MxSerialNumberGeneratorDao snDao = new MxSerialNumberGeneratorDao();
+    				FlowContext flowContext = new MxFlowContext(context);
+    				String strPrefix = "RPT-RR-"+dateNowStr;
+    				String serNo = snDao.getSerialNoByKey( flowContext , strPrefix , strPrefix , strPrefix, true );
+    				serNo = String.format("%08d", Integer.parseInt(serNo));
+    				String ResultChemicalName = strPrefix + serNo;
+    				
+    			/*create Result object*/
+    				DomainObject ResultChemicalObj = new DomainObject();
+    				String strVault = "eService Production";
+    				ResultChemicalObj.createObject(context, "CSTC_TestResult_Chemical_DOSCAR", ResultChemicalName, "1", "CSTC_TestReq_Sub", strVault);
+    				ResultChemicalObj.setAttributeValue(context, "CSTC_TestReq_SampleId", strTireId);
+    				ResultChemicalObj.addFromObject(context, new RelationshipType( REL_CSTC_TestPart2TestResult ), TestPartId);
+    				ResultChemicalObj.addFromObject(context, new RelationshipType( REL_CSTC_TestReq2TestResult ), TestReqChemicalId);
+    				ResultChemicalObj.addFromObject(context, new RelationshipType( REL_CSTC_TestMethod2TestResult ), TestMethodId);
+    				
+    		    }
+				else if((strTestItemName[j].toString()).equals("MC")){
+    		    	Date d = new Date();    
+    		        SimpleDateFormat sdf = new SimpleDateFormat("yy");  
+    		        String dateNowStr = sdf.format(d);
+    				MxSerialNumberGeneratorDao snDao = new MxSerialNumberGeneratorDao();
+    				FlowContext flowContext = new MxFlowContext(context);
+    				String strPrefix = "RPT-RR-"+dateNowStr;
+    				String serNo = snDao.getSerialNoByKey( flowContext , strPrefix , strPrefix , strPrefix, true );
+    				serNo = String.format("%08d", Integer.parseInt(serNo));
+    				String ResultChemicalName = strPrefix + serNo;
+    				
+    			/*create Result object*/
+    				DomainObject ResultChemicalObj = new DomainObject();
+    				String strVault = "eService Production";
+    				ResultChemicalObj.createObject(context, "CSTC_TestResult_Chemical_MC", ResultChemicalName, "1", "CSTC_TestReq_Sub", strVault);
+    				ResultChemicalObj.setAttributeValue(context, "CSTC_TestReq_SampleId", strTireId);
+    				ResultChemicalObj.addFromObject(context, new RelationshipType( REL_CSTC_TestPart2TestResult ), TestPartId);
+    				ResultChemicalObj.addFromObject(context, new RelationshipType( REL_CSTC_TestReq2TestResult ), TestReqChemicalId);
+    				ResultChemicalObj.addFromObject(context, new RelationshipType( REL_CSTC_TestMethod2TestResult ), TestMethodId);
+    				
+    		    }
+				else if((strTestItemName[j].toString()).equals("EC")){
+    		    	Date d = new Date();    
+    		        SimpleDateFormat sdf = new SimpleDateFormat("yy");  
+    		        String dateNowStr = sdf.format(d);
+    				MxSerialNumberGeneratorDao snDao = new MxSerialNumberGeneratorDao();
+    				FlowContext flowContext = new MxFlowContext(context);
+    				String strPrefix = "RPT-RR-"+dateNowStr;
+    				String serNo = snDao.getSerialNoByKey( flowContext , strPrefix , strPrefix , strPrefix, true );
+    				serNo = String.format("%08d", Integer.parseInt(serNo));
+    				String ResultChemicalName = strPrefix + serNo;
+    				
+    			/*create Result object*/
+    				DomainObject ResultChemicalObj = new DomainObject();
+    				String strVault = "eService Production";
+    				ResultChemicalObj.createObject(context, "CSTC_TestResult_Chemical_EC", ResultChemicalName, "1", "CSTC_TestReq_Sub", strVault);
+    				ResultChemicalObj.setAttributeValue(context, "CSTC_TestReq_SampleId", strTireId);
+    				ResultChemicalObj.addFromObject(context, new RelationshipType( REL_CSTC_TestPart2TestResult ), TestPartId);
+    				ResultChemicalObj.addFromObject(context, new RelationshipType( REL_CSTC_TestReq2TestResult ), TestReqChemicalId);
+    				ResultChemicalObj.addFromObject(context, new RelationshipType( REL_CSTC_TestMethod2TestResult ), TestMethodId);
+    				
+    		    }  else if((strTestItemName[j].toString()).equals("QsixR")){
+    		    	Date d = new Date();    
+    		        SimpleDateFormat sdf = new SimpleDateFormat("yy");  
+    		        String dateNowStr = sdf.format(d);
+    				MxSerialNumberGeneratorDao snDao = new MxSerialNumberGeneratorDao();
+    				FlowContext flowContext = new MxFlowContext(context);
+    				String strPrefix = "RPT-RR-"+dateNowStr;
+    				String serNo = snDao.getSerialNoByKey( flowContext , strPrefix , strPrefix , strPrefix, true );
+    				serNo = String.format("%08d", Integer.parseInt(serNo));
+    				String ResultChemicalName = strPrefix + serNo;
+    				
+    			/*create Result object*/
+    				DomainObject ResultChemicalObj = new DomainObject();
+    				String strVault = "eService Production";
+    				ResultChemicalObj.createObject(context, "CSTC_TestResult_Chemical_QsixR", ResultChemicalName, "1", "CSTC_TestReq_Sub", strVault);
+    				ResultChemicalObj.setAttributeValue(context, "CSTC_TestReq_SampleId", strTireId);
+    				ResultChemicalObj.addFromObject(context, new RelationshipType( REL_CSTC_TestPart2TestResult ), TestPartId);
+    				ResultChemicalObj.addFromObject(context, new RelationshipType( REL_CSTC_TestReq2TestResult ), TestReqChemicalId);
+    				ResultChemicalObj.addFromObject(context, new RelationshipType( REL_CSTC_TestMethod2TestResult ), TestMethodId);
+    				
+    		    }
+    		    
+    		    
+		    }
+ 		}
+ 		
+ 
+	}
+	
+	public void setFlagWorkCompelete(Context context, String[] args) throws Exception {
+		
+		HashMap argsMap = (HashMap) JPO.unpackArgs(args);
+		String strReqId = (String) argsMap.get( MxProgramConstants.FLOW_DOC_ID );
+		
+		DomainObject reqObj = new DomainObject(strReqId);
+		reqObj.setAttributeValue(context, "CSTC_TestReq_FlagWorkComplete", "Y");
+		
+		
+	}
+	
+	public void setFlagWorkNoCompelete(Context context, String[] args) throws Exception {
+		
+		HashMap argsMap = (HashMap) JPO.unpackArgs(args);
+		String strReqId = (String) argsMap.get( MxProgramConstants.FLOW_DOC_ID );
+		
+		DomainObject reqObj = new DomainObject(strReqId);
+		reqObj.setAttributeValue(context, "CSTC_TestReq_FlagWorkComplete", "");
+		
+		
+	}
+	
+	
+	/*Fliter*/
+	//select by DeptId TestItem State Date
+	public MapList getAllProject(Context context, String[] args) throws Exception{
+		//get para
+		HashMap programMap         = (HashMap) JPO.unpackArgs(args);
+		//System.out.println("programMap = "+programMap.toString());
+
+		String strDeptId = (String)programMap.get("u_DeptId");
+		String strItem = (String)programMap.get("u_ItemName");
+		String strState = (String)programMap.get("u_State");
+		String strBeginDate = (String)programMap.get("u_BeginDate");
+		String strEndDate = (String)programMap.get("u_EndDate");
+		//System.out.println("strDeptId = "+ strDeptId);
+		MapList returnList = new MapList();
+		//testReq info
+		String whereStr1="";
+		String whereStr2="";
+		String whereStr3="";
+		String whereStr4="";
+		if(UIUtil.isNotNullAndNotEmpty(strDeptId)){
+			String[] strDeptName = strDeptId.split(",");
+			for(int j=0;j<strDeptName.length;j++){
+				whereStr1= whereStr1 + "attribute[CSTC_TestReq_DeptId]=='"+strDeptName[j]+"'"+" or ";
+			}
+			whereStr1 = "("+whereStr1.substring(0,whereStr1.length()-4)+")";
+		}
+		if(UIUtil.isNotNullAndNotEmpty(strItem)){
+			String[] strItemName = strItem.split(",");
+			for(int j=0;j<strItemName.length;j++){
+				whereStr2= whereStr2 +"from[CSTC_TestReq2TestMethod].to.attribute[CSTC_TestReq_TestItemDisplay]=='"+strItemName[j]+"'"+" or ";
+			}
+			if(UIUtil.isNullOrEmpty(strDeptId)){
+				whereStr2 = "("+whereStr2.substring(0,whereStr2.length()-4)+")";
+		    }else{
+			    whereStr2 = "and("+whereStr2.substring(0,whereStr2.length()-4)+")";
+			    }
+		} 
+		if(UIUtil.isNotNullAndNotEmpty(strState)){
+			String[] strStateName = strState.split(",");
+			for(int j=0;j<strStateName.length;j++){
+				whereStr3= whereStr3 +"current=='"+strStateName[j]+"'"+" or ";
+			}
+			if(UIUtil.isNullOrEmpty(strDeptId)&&UIUtil.isNullOrEmpty(strItem)){
+				whereStr3 = "("+whereStr3.substring(0,whereStr3.length()-4)+")";
+		    }else{
+			    whereStr3 = "and("+whereStr3.substring(0,whereStr3.length()-4)+")";
+			    }
+		}
+		if(UIUtil.isNotNullAndNotEmpty(strBeginDate)&&UIUtil.isNotNullAndNotEmpty(strEndDate)){
+			String[] strDateBegin = strBeginDate.split("-");
+			String dBegin = strDateBegin[1]+"/"+ strDateBegin[2]+"/"+strDateBegin[0];
+			//System.out.println("dBegin = "+ dBegin);
+			String[] strDateEnd = strEndDate.split("-");
+			String dEnd = strDateEnd[1]+"/"+ strDateEnd[2]+"/"+strDateEnd[0];
+			//System.out.println("dEnd = "+ dEnd);
+			if(UIUtil.isNullOrEmpty(strDeptId)&&UIUtil.isNullOrEmpty(strItem)&&UIUtil.isNullOrEmpty(strState)){
+			    whereStr4="originated>='"+dBegin+"' and originated<='"+dEnd+"'";
+			}else{
+				whereStr4="and(originated>='"+dBegin+"' and originated<='"+dEnd+"')";
+			}
+		}
+		
+		StringList busSel = new StringList();
+		busSel.addElement( "id" );
+		String whereStr=whereStr1+whereStr2+whereStr3+whereStr4;
+		//System.out.println("whereStr = "+ whereStr);
+		//String whereStr="originated='2018-5-16'";
+		MapList dataList = DomainObject.findObjects(context, "CSTC_TestReq_Chemical" , "*", whereStr , busSel);
+		//System.out.println("dataList = " + dataList.size());
+		for( int p=0 ; p<dataList.size(); p++ ){
+			Map testReqInfo = (Map)dataList.get(p);
+			String testReqId = (String)testReqInfo.get("id");
+			Map dataMap = new HashMap();
+			dataMap.put( "id" , testReqId );
+			returnList.add( dataMap );
+		}
+		return returnList ;
+	}
+    
+
+    public MapList getAllProjectNew(Context context, String[] args) throws Exception{
+		HashMap programMap = (HashMap) JPO.unpackArgs(args);
+        MapList returnList = new MapList();
+        String whereStr = "";
+		String strDpetCTSC = (String)programMap.get("u_DeptId_CSTC");
+		String strDpetCTS = (String)programMap.get("u_DeptId_CST");
+		String strItem = (String)programMap.get("u_ItemName");
+		String strState = (String)programMap.get("u_State");
+		String strBeginDate = (String)programMap.get("u_BeginDate");
+		String strEndDate = (String)programMap.get("u_EndDate");
+		String strType = (String)programMap.get("u_type");
+        String c1 = "";
+        if(!strDpetCTSC.equals("")){
+            c1 = "(attribute[CSTC_TestReq_TestSite]=='CSTC' and (";
+            String [] conditionsList = strDpetCTSC.split(",");
+            for(int i = 0; i < conditionsList.length; i++){
+                if(i == 0){
+                    c1 = c1 + "attribute[CSTC_TestReq_DeptId] =='"+conditionsList[i]+"'";
+                }else{
+                    c1 = c1 + " or attribute[CSTC_TestReq_DeptId] =='"+conditionsList[i]+"'";
+                }
+            }
+            c1 = c1 + "))";
+        }
+        String c2 = "";
+        if(!strDpetCTS.equals("")){
+            c2 = "(attribute[CSTC_TestReq_TestSite]=='CST' and (";
+            String [] conditionsList = strDpetCTS.split(",");
+            for(int i = 0; i < conditionsList.length; i++){
+                if(i == 0){
+                    c2 = c2 + "attribute[CSTC_TestReq_DeptId ]=='"+conditionsList[i]+"'";
+                }else{
+                    c2 = c2 + " or attribute[CSTC_TestReq_DeptId] =='"+conditionsList[i]+"'";
+                }
+            }
+            c2 = c2 + "))";
+        }
+        String c1and2 = "";
+        String c3 = "";
+        if(!strItem.equals("")){
+            c3 = "(";
+            String [] conditionsList = strItem.split(",");
+            for(int i = 0; i < conditionsList.length; i++){
+                if(i == 0){
+                    c3 = c3 + "from[CSTC_TestReq2TestMethod].to.attribute[CSTC_TestReq_TestItemDisplay] =='"+conditionsList[i]+"'";
+                }else{
+                    c3 = c3 + " or from[CSTC_TestReq2TestMethod].to.attribute[CSTC_TestReq_TestItemDisplay] =='"+conditionsList[i]+"'";
+                }
+            }
+            c3 = c3 + ")";
+        }
+        String c4 = "";
+        if(!strState.equals("")){
+            c4 = "(";
+            String [] conditionsList = strState.split(",");
+            for(int i = 0; i < conditionsList.length; i++){
+                if(i == 0){
+                    c4 = c4 + "current =='"+conditionsList[i]+"'";
+                }else{
+                    c4 = c4 + " or current =='"+conditionsList[i]+"'";
+                }
+            }
+            c4 = c4 + ")";
+        }
+        String c5 = "";
+        String[] strDateBegin = strBeginDate.split("-");
+		String dBegin = strDateBegin[1]+"/"+ strDateBegin[2]+"/"+strDateBegin[0];
+		String[] strDateEnd = strEndDate.split("-");
+        String dEnd = strDateEnd[1]+"/"+ strDateEnd[2]+"/"+strDateEnd[0];
+        c5 = "(originated>='"+dBegin+"' and originated<='"+dEnd+"')";
+        // c1and2
+        if((c1.equals("")==false)&&(c2.equals("")==false)){
+            c1and2 = "(" + c1 + "or" + c2 + ")";
+        }else if((c1.equals("")==true)&&(c2.equals("")==true)){
+            c1and2 = "";
+        }else{
+            c1and2 = c1.equals("")?c2:c1;
+        }
+        if(c1and2.equals("")){}else{
+            c1and2 = "and" + c1and2;
+        }
+        if(c3.equals("")){}else{
+            c3 = "and" + c3;
+        }
+        if(c4.equals("")){}else{
+            c4 = "and" + c4;
+        }
+        whereStr = c5 + c1and2 + c3 + c4;
+        System.out.println("Condition:"+whereStr);
+		StringList busSel = new StringList();
+		busSel.addElement( "id" );
+		MapList dataList = DomainObject.findObjects(context, strType , "*", whereStr , busSel);
+		for( int p=0 ; p<dataList.size(); p++ ){
+			Map testReqInfo = (Map)dataList.get(p);
+			String testReqId = (String)testReqInfo.get("id");
+			Map dataMap = new HashMap();
+			dataMap.put( "id" , testReqId );
+			returnList.add( dataMap );
+		}
+		return returnList ;
+	}
+
+
+
+	/**
+ * kun
+ * for get sign getSignReceivingateNow
+ * use by -> Table column programHTMLOutput
+ * 
+ * @param context
+ * @param args
+ * @return
+ * @throws Exception
+ */		
+		public Vector getSignReceivingateNow(Context context, String[] args) throws Exception {
+			Vector vec = new Vector();
+			HashMap programMap = (HashMap) JPO.unpackArgs(args);
+			MapList objectList = (MapList) programMap.get("objectList");
+			String strReceivingateNow ="";
+			for(int i=0;i<objectList.size();i++){
+				Map mapInfo = (Map)objectList.get(i);
+				String strId = (String)mapInfo.get("id");
+				DomainObject reqObj = new DomainObject(strId);
+			
+				StringList busSel = new StringList();
+				busSel.addElement( DomainObject.SELECT_ID );
+				busSel.addElement( DomainObject.SELECT_NAME );
+				busSel.addElement( "attribute[STI_Flow_FinishDate]" );
+				StringList relSel = new StringList();
+				relSel.addElement( DomainRelationship.SELECT_ID );
+				// name ~~ 'end*'
+				String strwhere="name ~~ 'Che_Review*'";
+				MapList signList = reqObj.getRelatedObjects( context
+						, "STI_Flow_Doc_Signature_Relation" , "STI_Flow_Signature"
+						, busSel, relSel , false , true , (short)1 , strwhere , "" , 0 );
+				if(signList.size()>0){
+			      Map MethodInfo = (Map)signList.get(0);
+			      String MethodId = (String)MethodInfo.get("id");
+			      DomainObject methodObj = new DomainObject( MethodId );
+				  strReceivingateNow = methodObj.getAttributeValue(context, "STI_Flow_FinishDate" );  
+				 
+			      }
+					
+				
+				vec.add(strReceivingateNow);
+	
+			}	
+			
+			return vec; 
+		}		
+
+		
+			 /**
+ * kun
+ * for get  getSignCompletionateNow
+ * use by -> Table column programHTMLOutput
+ * 
+ * @param context
+ * @param args
+ * @return
+ * @throws Exception
+ */		
+		public Vector getSignCompletionateNow(Context context, String[] args) throws Exception {
+			Vector vec = new Vector();
+			HashMap programMap = (HashMap) JPO.unpackArgs(args);
+			MapList objectList = (MapList) programMap.get("objectList");
+			String strCompletionateNow="";
+		
+	
+			for(int i=0;i<objectList.size();i++){
+			
+				Map mapInfo = (Map)objectList.get(i);
+				String strId = (String)mapInfo.get("id");
+				DomainObject reqObj = new DomainObject(strId);
+				
+				StringList busSel = new StringList();
+				busSel.addElement( DomainObject.SELECT_ID );
+				busSel.addElement( DomainObject.SELECT_NAME );
+                busSel.addElement( "attribute[STI_Flow_FinishDate]" );
+			
+				
+				StringList relSel = new StringList();
+				relSel.addElement( DomainRelationship.SELECT_ID );
+				
+						
+				MapList signList = reqObj.getRelatedObjects( context
+						, "STI_Flow_Instance_FlowDoc_Relation" , "STI_Flow_Instance"
+						, busSel, relSel , true , false , (short)1 , "" , "" , 0 );
+				
+				
+				if(signList.size()>0){
+					Map signInfo = (Map)signList.get(0);
+					String MethodId = (String)signInfo.get("id");
+			        DomainObject methodObj = new DomainObject( MethodId );
+					strCompletionateNow=methodObj.getAttributeValue(context, "STI_Flow_FinishDate" ); 
+					
+		
+				}
+				
+				vec.add(strCompletionateNow);
+	
+			}	
+			
+			return vec; 
+		}		
+	
+}
