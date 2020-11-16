@@ -1,0 +1,214 @@
+<%@include file="../common/emxNavigatorInclude.inc"%>
+<%@include file="../common/emxNavigatorTopErrorInclude.inc"%>
+<%@include file="../components/emxSearchInclude.inc"%>
+
+<%@page language="java" import="java.util.*" pageEncoding="GBK"%>
+
+<%@page language="java" import="java.io.*"%>
+<%@page import="java.io.File"%>
+
+<%@page import="com.matrixone.apps.common.Search"%>
+<%@page import="com.matrixone.apps.domain.util.FrameworkException"%>
+<%@page import="com.matrixone.apps.domain.util.i18nNow"%>
+<%@page import="com.sti.flow.utility.STILogger"%>
+
+
+<jsp:useBean id="tableBean" class="com.matrixone.apps.framework.ui.UITable" scope="session" />
+
+<%
+	//set para
+	String type = "CSTC_TestReq_Exp";
+	String postProcessJPO = "CSTC_Bobo_Test1:Test1";
+	String testReqId= emxGetParameter(request, "objectId");
+	DomainObject testReqObj = new DomainObject(testReqId);	
+	
+	String strSampleId = "";
+	StringList busSel = new StringList();
+	busSel.addElement( "id" );
+	busSel.addElement( "attribute[CSTC_TestReq_SampleId]" );
+	String whereStr="to[CSTC_TestReq2TestResult].from.id=='"+testReqId+"'";
+	MapList dataList = DomainObject.findObjects(context, "CSTC_TestResult_Chemical_HPLC" , "*", whereStr , busSel);
+	//System.out.println( "dataList="+dataList.size());
+	
+	
+	
+%>
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=gb2312" />
+<title>File Upload</title>
+
+<link rel="stylesheet" type="text/css" href="../common/styles/emxUIExtendedHeader.css">
+<link rel="stylesheet" type="text/css" href="../common/styles/emxUINavigator.css">
+<link rel="stylesheet" type="text/css" href="../common/styles/emxUIFancyTree.css"/>
+<link rel="stylesheet" type="text/css" href="../common/styles/emxUIImageManagerInPlace.css">
+<link rel="stylesheet" type="text/css" href="../common/styles/emxUICalendar.css">
+<link rel="stylesheet" type="text/css" href="../common/styles/emxUIMenu.css">
+<link rel="stylesheet" type="text/css" href="../common/styles/emxUIDefault.css">
+<link rel="stylesheet" type="text/css" href="../common/styles/enoDashboardPanelRight.css">
+<link rel="stylesheet" type="text/css" href="../common/styles/emxUIDOMLayout.css">
+<link rel="stylesheet" type="text/css" href="../common/styles/emxUIToolbar.css">
+<link rel="stylesheet" type="text/css" href="../common/styles/emxUIPortal.css">
+<link rel="stylesheet" type="text/css" href="../common/styles/emxUIProperties.css">
+<link rel="stylesheet" type="text/css" href="../common/styles/emxUIList.css">
+<link rel="stylesheet" type="text/css" href="../common/styles/emxUIForm.css">
+<link rel="stylesheet" type="text/css" href="../common/styles/emxUIStructureBrowser.css">
+<link rel="stylesheet" type="text/css" href="../common/styles/MiniMap.css">
+<link rel="stylesheet" type="text/css" href="../common/styles/emxUIPropertiesPopover.css">
+<link rel="stylesheet" type="text/css" href="../common/styles/emxUIImageManagerInPlace.css">
+<link rel="stylesheet" type="text/css" href="../common/styles/emxUIThumbnailGallery.css">
+<link rel="stylesheet" type="text/css" href="../webapps/UIKIT/UIKIT.css">
+<link rel="stylesheet" type="text/css" href="../webapps/i3DXCompass/i3DXCompass.css">
+<link rel="stylesheet" type="text/css" href="../webapps/Coachmark/Coachmark.css">
+<link rel="stylesheet" type="text/css" href="../plugins/libs/jqueryui/1.10.3/css/jquery-ui.css">
+<link rel="stylesheet" type="text/css" href="../webapps/TagNavigator/TagNavigator.css">
+<script type="text/javascript" src="scripts/jquery-1.6.4.min.js"></script>
+<script language="JavaScript" src="../common/scripts/emxUIConstants.js"></script>
+<script language="JavaScript" src="../common/scripts/emxUICore.js"></script>
+<script language="JavaScript" src="../common/scripts/emxUICoreMenu.js"></script>
+<script language="JavaScript" src="../common/scripts/jquery-latest.js"></script>
+<script language="JavaScript" src="../common/scripts/emxUIToolbar.js"></script>
+<script language="JavaScript" src="../emxUIFilterUtility.js"></script>
+<script language="JavaScript" src="../common/scripts/emxUIActionbar.js"></script>
+<script language="JavaScript" src="../common/scripts/emxUIModal.js"></script>
+<script language="JavaScript" src="../common/scripts/emxNavigatorHelp.js"></script>
+<script language="JavaScript" src="../emxUIPageUtility.js"></script>
+<script language="JavaScript" src="../common/scripts/emxUIBottomPageJavaScriptInclude.js"></script>
+<script language="JavaScript" src="fx/hs_setdate.js"></script>
+<script language="javascript" type="text/javascript">
+
+	function test1() {
+		var mv = document.getElementById("T_T1").value;
+		//alert(mv);
+		//$('input:checkbox[name="T_R1"]:checked').each(function(){
+		//	mv = mv + $(this).val() + ",";
+		//})
+		if(mv==""){
+			alert("Please Input Your Result.");
+			return false;
+		}else{
+		//	mv = mv.substr(0,mv.length-1);	
+		//alert(mv);
+		var arr1 = mv.split("\n");
+		//alert(arr1[0]);
+		//alert(arr1.length);
+		
+		var arr2 = new Array(3);
+		for(i=0;i<arr1.length;i++){
+			arr2 = arr1[i].split(",");
+			//alert(arr2[0]);
+			//alert(arr2.length);
+			<%
+			 for(int j = 0; j < dataList.size();j++){
+			    Map strResultInfo = (Map)dataList.get(j);
+			    String strResultId = (String)strResultInfo.get("id");
+			    DomainObject resultObj = new DomainObject( strResultId );
+			    strSampleId = resultObj.getAttributeValue(context,"CSTC_TestReq_SampleId");
+				//System.out.println( "strSampleId="+strSampleId);
+			%>
+			var strSample = '<%=strSampleId%>';
+			var str0 = arr2[0];
+			if(str0==strSample){
+				//alert("winnie");
+				//alert(arr2[1]);
+				//window.opener.document.formEditDisplay.document.editDataForm.CSTC_TestReq_Chemical_RubberType0.value="001";
+				$("input[name=CSTC_TestReq_Chemical_SixPPD"+<%=j%>+"]", window.opener.formEditDisplay.document.editDataForm).val(arr2[1]);
+				$("input[name=CSTC_TestReq_Chemical_RD"+<%=j%>+"]", window.opener.formEditDisplay.document.editDataForm).val(arr2[2]);
+				
+				
+				
+		
+			}
+			<%
+			 }
+			%>
+		}
+		
+		
+		}
+
+		window.close();
+		
+	}
+	
+	
+
+	
+
+</script>
+</head>
+<body>
+<div id="pageHeadDiv">
+	<table>
+	<tbody>
+		<tr>
+			<td class="page-title"><p><font size="3" color="#FF0000"><b>Import Objects</b></font></p></td>
+			<td class="functions">
+				<table>
+				<tbody>
+					<tr>
+						<td class="progress-indicator"><div id="imgProgressDiv" style="visibility: hidden;"></div>
+						</td>
+					</tr>
+				</tbody>
+				</table>
+			</td>
+		</tr>
+	</tbody>
+	</table>
+	<script language="JavaScript" src="../common/emxToolbarJavaScript.jsp?toolbar=CSTC_SelectPersonDialog_top_menu&amp;isFSToolbar=true&amp;suiteKey=ProgramCentral&amp;relId=&amp;isFS=true&amp;helpMarker=emxhelpassigneeeditroledialog&amp;objectId=null&amp;timeStamp=1502351279748&amp;suiteDir=programcentral&amp;PrinterFriendly=false&amp;portalMode=false&amp;export=false&amp;CurrencyConverter=false" type="text/javascript"></script>
+	<div class="toolbar-container" id="divToolbarContainer">
+		<div id="divToolbar" class="toolbar-frame">
+			<div class="toolbar">
+			</div>
+		</div>
+	</div>
+</div>
+	
+<div id="divPageBody" style="top:99px; background-color:#FFFFFF; padding:10px 20px 20px 20px; ">
+	<form name="upload" method="post" action="CSTC_Com_PostProcess.jsp">
+    	<input name="postProcessJPO" type="hidden" value="<%=postProcessJPO%>">
+    	<input name="type" type="hidden" value="<%=type%>">
+		<table style='text-align: left; width: 100%;border-collapse:collapse;' border='1' cellpadding='2' cellspacing='1' bordercolor='#bfbfbf' >
+           
+            <tr>
+				<td style='width: 20%; height: 250px;' bgcolor='#CDCDB4'><em><strong><font color='#000000'>&nbsp;&nbsp;Please Input Your Result&nbsp;</font></strong></em></td>
+				<td style='width: 75%; height: 40px;' bgcolor='#E8E8E8'>&nbsp;&nbsp;<textarea id="T_T1" cols="80" rows="10"></textarea></td>
+			</tr>
+			
+			
+			
+			
+			
+
+		</table>
+
+	</form>
+</div>	
+	
+<div id="divPageFoot">
+	<table>
+	<tbody>
+		<tr>
+			<td class="functions"></td>
+			<td class="buttons">
+				<table>
+				<tbody>
+					<tr>
+						<!-- //XSSOK -->
+						<td><a onClick="javascript:test1();"><button class="btn-primary" type="button">完成</button></a></td>
+						<td> </td>
+						<!-- //XSSOK -->
+						<td><a onClick="javascript:top.close() "><button class="btn-default" type="button">取消</button></a></td>
+						
+					</tr>
+				</tbody>
+				</table>
+			</td>
+		</tr>
+	</tbody>
+	</table>
+</div>	
+</body>
+</html>
