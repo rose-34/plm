@@ -1,0 +1,358 @@
+<%@include file="../common/emxNavigatorInclude.inc"%>
+<%@include file="../common/emxNavigatorTopErrorInclude.inc"%>
+<%@include file="../components/emxSearchInclude.inc"%>
+
+<%@page language="java" import="java.util.*" pageEncoding="UTF-8"%>
+
+<%@page language="java" import="java.io.*"%>
+<%@page import="java.io.File"%>
+
+<%@page import="com.matrixone.apps.common.Search"%>
+<%@page import="com.matrixone.apps.domain.util.FrameworkException"%>
+<%@page import="com.matrixone.apps.domain.util.i18nNow"%>
+<%@page import="com.sti.flow.utility.STILogger"%>
+
+
+<jsp:useBean id="tableBean" class="com.matrixone.apps.framework.ui.UITable" scope="session" />
+
+<%
+	//set para
+	String type = "CSTC_TestReq_Exp";
+	//String postProcessJPO = "CSTC_Bobo_Test1:Test1";
+%>
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=gb2312" />
+<title>File Upload</title>
+
+<link rel="stylesheet" type="text/css" href="../common/styles/emxUIExtendedHeader.css">
+<link rel="stylesheet" type="text/css" href="../common/styles/emxUINavigator.css">
+<link rel="stylesheet" type="text/css" href="../common/styles/emxUIFancyTree.css"/>
+<link rel="stylesheet" type="text/css" href="../common/styles/emxUIImageManagerInPlace.css">
+<link rel="stylesheet" type="text/css" href="../common/styles/emxUICalendar.css">
+<link rel="stylesheet" type="text/css" href="../common/styles/emxUIMenu.css">
+<link rel="stylesheet" type="text/css" href="../common/styles/emxUIDefault.css">
+<link rel="stylesheet" type="text/css" href="../common/styles/enoDashboardPanelRight.css">
+<link rel="stylesheet" type="text/css" href="../common/styles/emxUIDOMLayout.css">
+<link rel="stylesheet" type="text/css" href="../common/styles/emxUIToolbar.css">
+<link rel="stylesheet" type="text/css" href="../common/styles/emxUIPortal.css">
+<link rel="stylesheet" type="text/css" href="../common/styles/emxUIProperties.css">
+<link rel="stylesheet" type="text/css" href="../common/styles/emxUIList.css">
+<link rel="stylesheet" type="text/css" href="../common/styles/emxUIForm.css">
+<link rel="stylesheet" type="text/css" href="../common/styles/emxUIStructureBrowser.css">
+<link rel="stylesheet" type="text/css" href="../common/styles/MiniMap.css">
+<link rel="stylesheet" type="text/css" href="../common/styles/emxUIPropertiesPopover.css">
+<link rel="stylesheet" type="text/css" href="../common/styles/emxUIImageManagerInPlace.css">
+<link rel="stylesheet" type="text/css" href="../common/styles/emxUIThumbnailGallery.css">
+<link rel="stylesheet" type="text/css" href="../webapps/UIKIT/UIKIT.css">
+<link rel="stylesheet" type="text/css" href="../webapps/i3DXCompass/i3DXCompass.css">
+<link rel="stylesheet" type="text/css" href="../webapps/Coachmark/Coachmark.css">
+<link rel="stylesheet" type="text/css" href="../plugins/libs/jqueryui/1.10.3/css/jquery-ui.css">
+<link rel="stylesheet" type="text/css" href="../webapps/TagNavigator/TagNavigator.css">
+<script type="text/javascript" src="scripts/jquery-1.6.4.min.js"></script>
+<script language="JavaScript" src="../common/scripts/emxUIConstants.js"></script>
+<script language="JavaScript" src="../common/scripts/emxUICore.js"></script>
+<script language="JavaScript" src="../common/scripts/emxUICoreMenu.js"></script>
+<script language="JavaScript" src="../common/scripts/jquery-latest.js"></script>
+<script language="JavaScript" src="../common/scripts/emxUIToolbar.js"></script>
+<script language="JavaScript" src="../emxUIFilterUtility.js"></script>
+<script language="JavaScript" src="../common/scripts/emxUIActionbar.js"></script>
+<script language="JavaScript" src="../common/scripts/emxUIModal.js"></script>
+<script language="JavaScript" src="../common/scripts/emxNavigatorHelp.js"></script>
+<script language="JavaScript" src="../emxUIPageUtility.js"></script>
+<script language="JavaScript" src="../common/scripts/emxUIBottomPageJavaScriptInclude.js"></script>
+<script language="JavaScript" src="fx/hs_setdate.js"></script>
+<script language="javascript" type="text/javascript">
+
+	function test1() {
+		var mv="";
+		var item="";
+		var state="";
+		
+		$('input:checkbox[name="T_R1_Phy"]:checked').each(function(){
+			mv = mv + $(this).val() + ",";
+		})
+		if(mv==""){
+			mv="";
+		}else{
+			mv = mv.substr(0,mv.length-1);
+		}
+		
+		$('input:checkbox[name="T_R2_Phy"]:checked').each(function(){
+			item = item + $(this).val() + ",";
+		})
+		if(item==""){
+			item="";
+		}else{
+			item = item.substr(0,item.length-1);
+		}
+		
+		$('input:checkbox[name="T_R3_Phy"]:checked').each(function(){
+			state = state + $(this).val() + ",";
+		})
+		if(state==""){
+			state="";
+		}else{
+			state = state.substr(0,state.length-1);
+		}
+		
+		var begingdate=document.getElementById('begin_phy').value;
+		var enddate=document.getElementById('end_phy').value;
+		if(begingdate==""||enddate==""){
+		    alert("Please Choose Date.");
+			return false;
+		}else if(CompareDate(begingdate,enddate)==true){
+			//alert(CompareDate(begingdate,enddate));
+			alert("The end date should be greater than the start date!");
+			return false;
+		}
+		//alert(enddate);
+		//alert(window.opener.parent.document.getElementById("content").src);
+		window.opener.parent.document.getElementById("content").src = "emxTable.jsp?program=CSTC_TestReq_Phy:getAllProject&table=CSTC_TestReq_Phy_MyTest_List&toolbar=CSTC_MyDesk_TestReq_Phy_Toolbar&header=emxFramework.Command.CSTC_MyDesk_TestReq_Physical&sortColumnName=&selection=&suiteKey=Framework&StringResourceFileId=emxFrameworkStringResource&SuiteDirectory=common&widgetId=null&u_DeptId_Phy="+mv+"&u_ItemName_Phy="+item+"&u_State_Phy="+state+"&u_BeginDate_Phy="+begingdate+"&u_EndDate_Phy="+enddate+"";
+		//var checkID = {};
+        //$("input:checkbox[name='T_R1_Phy']:checked").each(function(i){
+        //  checkID[i] = $(this).val();
+        // });
+        //alert(checkID[0]);
+		//$.ajax(
+        //            {data:{'checkID':checkID},
+        //              dataType:'json',
+        //              success: function(data){
+        //                alert(data);
+        //              },
+        //              type:'post',
+        //              url:'',
+        //              traditional:true
+        //            }
+        //        );
+		//alert("ok");
+
+		window.close();
+		
+	}
+	
+	function CompareDate(d1,d2)
+	{
+	  return ((new Date(d1.replace(/-/g,"\/"))) > (new Date(d2.replace(/-/g,"\/"))));
+	}
+	 
+	$(document).ready(function(){
+		
+		
+		var program = window.opener.parent.document.getElementById("content").src;
+		//console.log("param from url:"+program);
+		//alert(window.opener.parent.document.getElementById("content").src);
+		var str = "";
+		var str1 = "";
+		var str2 = "";
+		var arr;
+		var arr1;
+		var arr2;
+		//var tr1 = $("input[name='T_R1_Phy']").val();
+		var arr3 = document.getElementsByName("T_R1_Phy");
+		var arr4 = document.getElementsByName("T_R2_Phy");
+		var arr5 = document.getElementsByName("T_R3_Phy");
+		arr = program.split("&");
+		for(i=0;i<arr.length;i++){
+			arr1 = arr[i].split("=");
+			str = arr1[0];
+			str1 = arr1[1];
+			if(str=="u_DeptId_Phy"&&(!(str1==""))){
+				arr2 = str1.split(",");
+				for(j=0;j<arr2.length;j++){
+					//alert(arr2[j]);
+					str2 = arr2[j];
+					for(k=0;k<arr3.length;k++){
+						var val = arr3[k].value;
+						if(str2==val){
+                          arr3[k].checked=true;
+                        }
+					}
+				}
+			}
+			if(str=="u_ItemName_Phy"&&(!(str1==""))){
+				arr2 = str1.split(",");
+				for(j=0;j<arr2.length;j++){
+					//alert(arr2[j]);
+					str2 = arr2[j].replace(/%20/g," ").replace(/%E2%85%A2/g,"Ⅲ").replace(/%CE%BC/g,"μ");
+					// %E2%85%A2
+					//console.log("arr2:"+str2);
+					for(k=0;k<arr4.length;k++){
+						var val = arr4[k].value;
+						//console.log("arr4:"+val);
+						if(str2==val){
+                          arr4[k].checked=true;
+                        }
+					}
+				}
+			}
+			if(str=="u_State_Phy"&&(!(str1==""))){
+				arr2 = str1.split(",");
+				for(j=0;j<arr2.length;j++){
+					//alert(arr2[j]);
+					str2 = arr2[j];
+					for(k=0;k<arr5.length;k++){
+						var val = arr5[k].value;
+						if(str2==val){
+                          arr5[k].checked=true;
+                        }
+					}
+				}
+			}
+			if(str=="u_BeginDate_Phy"&&(!(str1==""))){
+			    $("#begin_phy").attr("value",str1);
+			}
+			if(str=="u_EndDate_Phy"&&(!(str1==""))){
+			    $("#end_phy").attr("value",str1);
+			}
+		}
+	});
+	
+
+</script>
+</head>
+<body>
+<div id="pageHeadDiv">
+	<table>
+	<tbody>
+		<tr>
+			<td class="page-title"><p><font size="3" color="#FF0000"><b>Import Objects</b></font></p></td>
+			<td class="functions">
+				<table>
+				<tbody>
+					<tr>
+						<td class="progress-indicator"><div id="imgProgressDiv" style="visibility: hidden;"></div>
+						</td>
+					</tr>
+				</tbody>
+				</table>
+			</td>
+		</tr>
+	</tbody>
+	</table>
+	<script language="JavaScript" src="../common/emxToolbarJavaScript.jsp?toolbar=CSTC_SelectPersonDialog_top_menu&amp;isFSToolbar=true&amp;suiteKey=ProgramCentral&amp;relId=&amp;isFS=true&amp;helpMarker=emxhelpassigneeeditroledialog&amp;objectId=null&amp;timeStamp=1502351279748&amp;suiteDir=programcentral&amp;PrinterFriendly=false&amp;portalMode=false&amp;export=false&amp;CurrencyConverter=false" type="text/javascript"></script>
+	<div class="toolbar-container" id="divToolbarContainer">
+		<div id="divToolbar" class="toolbar-frame">
+			<div class="toolbar">
+			</div>
+		</div>
+	</div>
+</div>
+	
+<div id="divPageBody" style="top:99px; background-color:#FFFFFF; padding:10px 20px 20px 20px; ">
+	<form name="upload" method="post" action="CSTC_Com_PostProcess.jsp">
+    	
+    	<input name="type" type="hidden" value="<%=type%>">
+		<table style='text-align: left; width: 100%;border-collapse:collapse;' border='1' cellpadding='2' cellspacing='1' bordercolor='#bfbfbf' >
+           
+            <tr>
+				<td style='width: 20%; height: 50px;' bgcolor='#CDCDB4'><em><strong><font color='#000000'>&nbsp;&nbsp;Department&nbsp;</font></strong></em></td>
+				<!-- <td style='width: 80%; height: 50px;' bgcolor='#E8E8E8'>&nbsp;&nbsp;<input name="T_R1_Phy" type="checkbox" value="Q1">Q1&nbsp;&nbsp;<input name="T_R1_Phy" type="checkbox" value="R1">R1&nbsp;&nbsp;<input name="T_R1_Phy" type="checkbox" value="R2">R2&nbsp;&nbsp;<input name="T_R1_Phy" type="checkbox" value="R3">R3&nbsp;&nbsp;<input name="T_R1_Phy" type="checkbox" value="S01">S01&nbsp;&nbsp;<input name="T_R1_Phy" type="checkbox" value="S02">S02&nbsp;&nbsp;<input name="T_R1_Phy" type="checkbox" value="S02">S02&nbsp;&nbsp;<input name="T_R1_Phy" type="checkbox" value="S03">S03&nbsp;&nbsp;<input name="T_R1_Phy" type="checkbox" value="S05">S05&nbsp;&nbsp;<input name="T_R1_Phy" type="checkbox" value="S06">S06&nbsp;&nbsp;<input name="T_R1_Phy" type="checkbox" value="S11">S11&nbsp;&nbsp;<input name="T_R1_Phy" type="checkbox" value="S12">S12&nbsp;&nbsp;<input name="T_R1_Phy" type="checkbox" value="S13">S13&nbsp;&nbsp;<input name="T_R1_Phy" type="checkbox" value="S15">S15&nbsp;&nbsp;<input name="T_R1_Phy" type="checkbox" value="S22">S22&nbsp;&nbsp;<input name="T_R1_Phy" type="checkbox" value="S23">S23&nbsp;&nbsp;<input name="T_R1_Phy" type="checkbox" value="S25">S25&nbsp;&nbsp;<input name="T_R1_Phy" type="checkbox" value="SA">SA&nbsp;&nbsp;<input name="T_R1_Phy" type="checkbox" value="SA1">SA1&nbsp;&nbsp;<input name="T_R1_Phy" type="checkbox" value="SA2">SA2&nbsp;&nbsp;<input name="T_R1_Phy" type="checkbox" value="T1">T1&nbsp;&nbsp;<input name="T_R1_Phy" type="checkbox" value="T2">T2&nbsp;&nbsp;</td> -->
+				<td style='width: 80%; height: 50px;' bgcolor='#E8E8E8'>&nbsp;&nbsp;<input name="T_R1_Phy" type="checkbox" value="R1">R1&nbsp;&nbsp;<input name="T_R1_Phy" type="checkbox" value="R2">R2&nbsp;&nbsp;<input name="T_R1_Phy" type="checkbox" value="R3">R3&nbsp;&nbsp;<input name="T_R1_Phy" type="checkbox" value="T1">T1&nbsp;&nbsp;<input name="T_R1_Phy" type="checkbox" value="T2">T2&nbsp;&nbsp;</td>
+			</tr>
+			
+			<tr>
+			    <td style='width: 20%; height: 50px;' bgcolor='#CDCDB4'><em><strong><font color='#000000'>&nbsp;&nbsp;Item&nbsp;</font></strong></em></td>
+				<!-- <td style='width: 80%; height: 50px;' bgcolor='#E8E8E8'>&nbsp;&nbsp;<input name="T_R2_Phy" type="checkbox" value="Chemical Analysis">Chemical Analysis&nbsp;&nbsp;<input name="T_R2_Phy" type="checkbox" value="DSC-Tg">DSC-Tg&nbsp;&nbsp;<input name="T_R2_Phy" type="checkbox" value="DSC-Tm">DSC-Tm&nbsp;&nbsp;<input name="T_R2_Phy" type="checkbox" value="TGA">TGA&nbsp;&nbsp;<input name="T_R2_Phy" type="checkbox" value="S">S&nbsp;&nbsp;<input name="T_R2_Phy" type="checkbox" value="GPC">GPC&nbsp;&nbsp;<input name="T_R2_Phy" type="checkbox" value="PGC">PGC&nbsp;&nbsp;<input name="T_R2_Phy" type="checkbox" value="GC">GC&nbsp;&nbsp;<input name="T_R2_Phy" type="checkbox" value="Qualitative%20Antioxidant">Qualitative Antioxidant</td> -->
+				<td style='width: 80%; height: 50px;' bgcolor='#E8E8E8'>&nbsp;&nbsp;
+				<input name="T_R2_Phy" type="checkbox" value="Viscoelastic-Ueshima VR7110(Tensile)">Viscoelastic-Ueshima VR7110(Tensile)
+				&nbsp;&nbsp;
+				<input name="T_R2_Phy" type="checkbox" value="Viscoelastic-Ueshima VR7130-1(Tensile)">Viscoelastic-Ueshima VR7130-1(Tensile)
+
+				<input name="T_R2_Phy" type="checkbox" value="Viscoelastic-Ueshima VR7130-2(Tensile)">Viscoelastic-Ueshima VR7130-2(Tensile)&nbsp;&nbsp;
+				<input name="T_R2_Phy" type="checkbox" value="Viscoelastic-Ueshima VR7130-3(Tensile)">Viscoelastic-Ueshima VR7130-3(Tensile)&nbsp;&nbsp;
+				<input name="T_R2_Phy" type="checkbox" value="Viscoelastic-GABO-1 EPLEXOR 500N(Tensile)">Viscoelastic-GABO-1 EPLEXOR 500N(Tensile)&nbsp;&nbsp;
+				<input name="T_R2_Phy" type="checkbox" value="Viscoelastic-GABO-2 EPLEXOR 500N(Tensile)">Viscoelastic-GABO-2 EPLEXOR 500N(Tensile)&nbsp;&nbsp;
+				<input name="T_R2_Phy" type="checkbox" value="Viscoelastic-ASSS-1  EPLEXOR">Viscoelastic-ASSS-1  EPLEXOR
+				&nbsp;&nbsp;
+				<input name="T_R2_Phy" type="checkbox" value="Viscoelastic-ASSS-2 EPLEXOR">Viscoelastic-ASSS-2 EPLEXOR
+				&nbsp;&nbsp;
+				
+				<input name="T_R2_Phy" type="checkbox" value="Viscoelastic-MTS">Viscoelastic-MTS
+				&nbsp;&nbsp;
+				<input name="T_R2_Phy" type="checkbox" value="Viscoelastic-Metravib DMA+1000(Shear)">Viscoelastic-Metravib DMA+1000(Shear)&nbsp;&nbsp;
+				<input name="T_R2_Phy" type="checkbox" value="Viscoelasti-TA RSAⅢ(Tensile)">Viscoelasti-TA RSAⅢ(Tensile)&nbsp;&nbsp;
+				<input name="T_R2_Phy" type="checkbox" value="Abrasion-Lambourn-1">Abrasion-Lambourn-1
+				&nbsp;&nbsp;
+				<input name="T_R2_Phy" type="checkbox" value="Abrasion-Lambourn-2">Abrasion-Lambourn-2&nbsp;&nbsp;
+				<input name="T_R2_Phy" type="checkbox" value="Friction-μs-1">Friction-μs-1
+				&nbsp;&nbsp;
+				<input name="T_R2_Phy" type="checkbox" value="Friction-μs-2">Friction-μs-2
+				&nbsp;&nbsp;
+				<input name="T_R2_Phy" type="checkbox" value="Abrasion-DIN">Abrasion-DIN&nbsp;&nbsp;
+				<input name="T_R2_Phy" type="checkbox" value="Abrasion-LAT100">Abrasion-LAT100&nbsp;&nbsp;
+				<input name="T_R2_Phy" type="checkbox" value="Fatigue-HBU">Fatigue-HBU&nbsp;&nbsp;
+				<input name="T_R2_Phy" type="checkbox" value="Rebound">Rebound&nbsp;&nbsp;
+				<input name="T_R2_Phy" type="checkbox" value="Brittleness Temperature Tester">Brittleness Temperature Tester&nbsp;&nbsp;
+				<input name="T_R2_Phy" type="checkbox" value="Rheological Property-ARC 2020">Rheological Property-ARC 2020&nbsp;&nbsp;
+				<input name="T_R2_Phy" type="checkbox" value="Filler Dispersion-α view">Filler Dispersion-α view
+				&nbsp;&nbsp;
+				<input name="T_R2_Phy" type="checkbox" value="Thermal conductivity meter-1">Thermal conductivity meter-1&nbsp;&nbsp;
+				<input name="T_R2_Phy" type="checkbox" value="Thermal conductivity meter-2">Thermal conductivity meter-2&nbsp;&nbsp;
+				
+				<input name="T_R2_Phy" type="checkbox" value="Glass Transition Temp.-DSC">Glass Transition Temp.
+				-DSC&nbsp;&nbsp;
+				<input name="T_R2_Phy" type="checkbox" value="Hardness-Bareiss Hardness Tester VT 7021">Hardness-Bareiss Hardness Tester VT 7021&nbsp;&nbsp;
+				<input name="T_R2_Phy" type="checkbox" value="Microscope-SEM">Microscope-SEM
+				&nbsp;&nbsp;
+				<input name="T_R2_Phy" type="checkbox" value="Microscope-AFM">Microscope-AFM
+				&nbsp;&nbsp;
+				<input name="T_R2_Phy" type="checkbox" value="Microscope-Keyence">Microscope-Keyence
+				&nbsp;&nbsp;
+				
+				<input name="T_R2_Phy" type="checkbox" value="Permeability-GTR">Permeability-GTR&nbsp;&nbsp;
+				<input name="T_R2_Phy" type="checkbox" value="RPA2000">RPA2000&nbsp;&nbsp;
+				
+				
+				<input name="T_R2_Phy" type="checkbox" value="Viscoelastic-Nanoindenter">Viscoelastic-Nanoindenter&nbsp;&nbsp;
+				<input name="T_R2_Phy" type="checkbox" value="Fatigue-Flex Fatigue">Fatigue-Flex Fatigue&nbsp;&nbsp;
+				<input name="T_R2_Phy" type="checkbox" value="Constant Elongation Fatigue">Constant Elongation Fatigue_FtoF&nbsp&nbsp;&nbsp;
+				<input name="T_R2_Phy" type="checkbox" value="Silica Dispersion">Silica Dispersion
+				</td>
+			</tr>
+			
+			<tr>
+			    <td style='width: 20%; height: 50px;' bgcolor='#CDCDB4'><em><strong><font color='#000000'>&nbsp;&nbsp;State&nbsp;</font></strong></em></td>
+				<td style='width: 80%; height: 50px;' bgcolor='#E8E8E8'>&nbsp;&nbsp;<input name="T_R3_Phy" type="checkbox" value="Create">Create&nbsp;&nbsp;<input name="T_R3_Phy" type="checkbox" value="Review">Review&nbsp;&nbsp;<input name="T_R3_Phy" type="checkbox" value="Assign">Assign&nbsp;&nbsp;<input name="T_R3_Phy" type="checkbox" value="Work">Work&nbsp;&nbsp;<input name="T_R3_Phy" type="checkbox" value="Complete">Complete&nbsp;&nbsp;<input name="T_R3_Phy" type="checkbox" value="Cancel">Cancel&nbsp;&nbsp;</td>
+			</tr>
+			<tr>
+			    <td style='width: 20%; height: 50px;' bgcolor='#CDCDB4'><em><strong><font color='#000000'>&nbsp;&nbsp;Created Date&nbsp;</font></strong></em></td>
+				<td style='width: 80%; height: 50px;' bgcolor='#E8E8E8'>
+					    &nbsp;&nbsp;begin:&nbsp;&nbsp;
+						<input name="dateSelectbegin" type="text" style="width:150px" onfocus="HS_setDate(this)" id="begin_phy" value="" readonly="readonly">
+						end:&nbsp;&nbsp;
+						<input name="dateSelectend" type="text" style="width:150px" onfocus="HS_setDate(this)" id="end_phy" value="" readonly="readonly">
+				</td>
+			</tr>
+
+		</table>
+
+	</form>
+</div>	
+	
+<div id="divPageFoot">
+	<table>
+	<tbody>
+		<tr>
+			<td class="functions"></td>
+			<td class="buttons">
+				<table>
+				<tbody>
+					<tr>
+						<!-- //XSSOK -->
+						<td><a onClick="javascript:test1();"><button class="btn-primary" type="button">完成</button></a></td>
+						<td> </td>
+						<!-- //XSSOK -->
+						<td><a onClick="javascript:top.close() "><button class="btn-default" type="button">取消</button></a></td>
+						
+					</tr>
+				</tbody>
+				</table>
+			</td>
+		</tr>
+	</tbody>
+	</table>
+</div>	
+</body>
+</html>
