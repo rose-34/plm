@@ -1,0 +1,280 @@
+PLM SQL help
+
+history [| on |];
+		| off |
+output VALUE;
+password NEW_PASSWORD;
+prompt [[PROMPT_1 [PROMPT_2]];
+quit;
+quote [| on |];
+	| off |
+run FILE;
+shell COMMAND_STRING;
+trigger [| on |];
+		| off |
+verbose [| on |];
+		|off|
+version;
+xml [| on |];
+	| off |
+See also;
+help [| all           ];
+	  |association    |
+	  |attribute      |
+	  |businessobject |
+	  |channel        |
+	  |command        |
+	  |config         |
+	  |connection     |
+	  |context        |
+	  |cue            |
+	  |customevent    |
+	  |dimension      |
+	  |env            |
+	  |error          |
+	  |export         |
+	  |extract        |
+	  |filter         |
+	  |form           |
+	  |format         |
+	  |group          |
+	  |import         |
+	  |index          |
+	  |inquiry        |
+	  |location       |
+	  |mail           |
+	  |menu           |
+	  |monitor        |
+	  |package        |
+	  |page           |
+	  |person         |
+	  |policy         |
+	  |portal         |
+	  |product        |
+	  |program        |
+	  |property       |
+	  |query          |
+	  |relationship   |
+	  |resource       |
+	  |role           |
+	  |rule           |
+	  |searchindex    |
+	  |server         |
+	  |sessions       |
+	  |set            |
+	  |site           |
+	  |pathtype       |
+	  |store          |
+	  |table          |
+	  |thread         |
+	  |tip            |
+	  |toolset        |
+	  |transaction    |
+	  |type           |
+	  |uniquerkey     |
+	  |user           |
+	  |vault          |
+	  |validate       |
+	  |view           |
+	  |wizard         |
+	  
+Command Syntax Notation
+	.In the syntax definition of the command,words in lower case are keywords. Examples are:add,print,help.When type into MATRIX,they may consist of mixed lower and upper case.
+	
+	.Items in UPPER CASE refer to categories. Examples are NAME VALUE. When typed into MATRIX, appropriate substiturions of actual names or values must be used.Note that names/values are case sensitive.
+	
+	.Items in squere brackets, [] , aer optional.
+	
+	.Items in braces , {} ,may appear zero or more times.
+	
+	.Items stacked between vertical lines are options of which one must be chosen.  That is:
+	
+	| item_1 |
+	|    .   |
+	|    .   | means choose one of the items
+	|    .   |
+	| item_1 |
+	
+	.MATRIX commands are entered as a free form list of words separated by one or more blanks, or newlines.Command lines should end with a semicolon(;).However,a command is also assumed ended when two consecutive newlines are entered.
+	
+	.Text appearing after a pound sign(#),up to and including the next newline,is ignored as a comment
+	
+	.NAMES,VALUE, etc.must be quoted (single or double) when they have embedded blanks,tabs,newlines,commas,semicolons,or pound signs.
+	
+	.Any keyword that accepts a list of VALUE (eg. keyword[VALUE {.VALUE}]) may also be specified separately for each value.For example:
+		attribute first,second,third
+			or
+		attribute first
+		attribute second
+		attribute third
+	
+	.Most keywords may be abbreviated to three characters(or the least number that will make them unique)
+	
+Usage:
+	Name
+		mql - command interface to MATRIX
+		
+	Version
+		3DEXPERIENCE R2015x HotFix 8
+	
+	Syntax	
+		mql [ options ] [-] [file...]
+	
+	Description
+		The mql command reads each input file and executes the MATRIX command.
+		
+		Files are read in order; if there are no files,the standard input is read. the file name '-' means the standard input .
+	
+	Options
+		-inidir directory_path
+			path to director with alternate ini files to use 
+		-b filename
+			Alternate bootstrap file name
+		-c 'command;command...'
+			User command;command...as the input script
+		-k Do not abort on error
+		-p Pipe input and output
+		-q Quote on
+		-t Do not print the title
+		-v Verbose on
+		-stdout:filename
+			Redirect mql output to a file 
+		-stdin:filename
+			Redirect mql errors to a file 
+		-verbose output software version and exit
+		-install
+			To create a bootstrap file (overwriting the one used to enter this session)
+			The istall modifier must be followed by the following case-sesintive arguments:
+			-user USERNAME to specify the database server user name
+			-password PASSWORD to specify the database server user name
+			-host CONNECTSTRING to specifye the database server connectstring.Default is none.
+			-driver DRIVER to specify the database driver to use - use one from :'Oracle/OCI80','DB2/CIL','MSSQL/ODBC'
+			The install modifier may be followed by the following case-sesintive arguments:
+			-jdbc JDBC URL to connect via jdbc to the database
+			-tablespace TABLESPACE to specify the default data tablespace
+			-indespace INDEXSPACE to specify the default index tablespace.
+			-[casesensitive|caseinsensitive] to specify that the database is casesensitive|caseinsensitive.
+		-remain -run the command specified by -c option and remain in the mql shell
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	expand bus ${ID}
+	from rel 'CSTC_TestReq2TestResult' 
+	select bus id where "type=='CSTC_TestResult_Chemical_QoneR'" 
+	select rel id dump |
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	.
+	  
+	  
+	  
+	  
+	  
+	  
+	  
+	  
+	  
+	  
+	  
+	  
+	  
+	  
+	  
+	  
+	  
+	  
+	  
+	  
+	  
+	  
+	  
+	  
+	  
+	  
+	  
+	  
+	  
+	  
+	  
+	  
+	  
+	  
+	  
+	  
+	  
+	  
+	  
+	  
+	  
+	  
+	  
+	  
+	  
+	  
+	  
+	  
+	  
+	  
+	  
+	  
+	  
+	  
+	  
+	  
+	
