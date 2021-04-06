@@ -1,0 +1,277 @@
+说明：mql操作的对象，分为两大类，一个是操作Business里面的schema，一个是操作matrix里面的实例，还有一些其他的特殊命令
+常用的schema：type(类型),attribute(属性),dimension(属性单位),relationship(关系),policy(生命周期),user(role(角色),person(人员),group(组));command(按钮),menu(菜单),portal,channel,table(tablel列表),form(form表单),program(程序)
+
+大部分声明都可以缩写 3字符 或者以上：例如bus(businessObject),rel(relationship),attr(attribute)
+
+
+http://bug.iatoz.cn/mantis/my_view_page.php55426.58804.35129.39237
+模糊搜索是加
+分割是加：dump |
+关闭trigger：trigger off;
+开启trigger：trigger on;
+关闭历史记录：history off;
+开启历史记录：history on;
+进如tcl语言：tcl;
+tcl语言里面退出到mql：exit
+exec prog emxSpinnerAgent.tcl;
+1.登入MQL
+set context user creator; // context 是上下文, creator是用户(超级管理员)
+2.schema
+type:
+list type;											//查询所有类型
+list type CMCS*;									//查询所有CMCS开头的类型
+print type CMCSRCQuestion select *;					//查询所有信息
+print type CMCSRCQuestion select attribute;			//类型里面有哪些属性
+print type CMCSRCQuestion select fromrel;			//作为fromd端的关系
+print type CMCSRCQuestion select torel;				//作为to端的关系
+print type CMCSRCQuestion select derived;			//查询父类
+print type CMCSRCQuestion select derivative;		//查询子类
+print type CMCSRCQuestion select trigger;			//查询trigger
+print type CMCSRCQuestion select trigger.*;			//查询trigger详细信息
+print type CMCSRCQuestion select history;			//查询trigger详细信息
+mod type CMCSRCQuestion add attribute Title;		//把属性Title 添加到CMCSRCQuestion类型里面
+mod type CMCSRCQuestion add attribute Title;		//把属性Title 从CMCSRCQuestion类型里面移除
+attribute:
+list attribute;										//查询所有属性
+list attribute CMCS*;								//查询所有CMCS开头的属性
+print attr Title select *;							//查询Title属性所有信息
+print attr Title select type;						//查询属性类型，字符串，日期，数字
+delete attr Title;									//删除属性
+dimension
+list dimension;										//查询所有单位
+relationship
+list relationship;									//查询所有关系
+list relationship CMCS*;							//查询所有CMCS开头的关系
+print rel CMCSNDocToQuestion select *;				//查询关系所有信息
+print rel CMCSNDocToQuestion select fromtype totype;//查询from端 和 to端类型
+mod rel CMCSNDocToQuestion add attr Title;			//给关系添加属性Title
+mod rel CMCSNDocToQuestion remove attr Title;		//移除关系属性Title
+mod rel CMCSNDocToQuestion from add type CMCSRCQuestion;	//给关系的from端添加类型
+mod rel CMCSNDocToQuestion from remove type CMCSRCQuestion;	//给关系的from端移除类型
+mod rel CMCSNDocToQuestion to add type CMCSRCQuestion;		//给关系的to端添加类型
+mod rel CMCSNDocToQuestion to remove type CMCSRCQuestion;		//给关系的to端移除类型
+delete rel CMCSNDocToQuestion;						//删除关系
+policy
+list policy;										//查询所有生命周期
+list policy CMCS*;									//查询所有CMCS开头的生命周期
+print policy CMCSRCQuestionPolicy select *;			//查询生命周期CMCSRCQuestionPolicy所有信息
+mod policy CMCSRCQuestionPolicy add type CMCSRCQuestion;	//把类型CMCSRCQuestion 加到生命周期CMCSRCQuestionPolicy里面
+mod policy CMCSRCQuestionPolicy remove type CMCSRCQuestion;	//把类型CMCSRCQuestion 从生命周期CMCSRCQuestionPolicy里面移除
+user
+list user;											//查询所有user（包括person role group）
+list person;										//查询所有人员
+list role;			                                 //查询所有角色
+print role *** select person						//查询有该角色的人	
+print person admin_platform select *;				//查询admin_platform所有信息
+print person admin_platform select assignment;		//查询人员分配了哪些角色
+mod person admin_platform assign role xxx;			//给人员分配xxx角色
+mod person admin_platform remove assign role xxx;	//给人员移除xxx角色
+mod person admin_platform type system,business;		//给人员系统管理员和业务管理员权限
+mod person admin_platform type !system,!business;	//给人员移除系统管理员和业务管理员权限
+mod product xxx add person admin_platform;			//给人员分配license
+mod product xxx remove person admin_platform;		//给人员移除license
+list user "Test Everything" select isaperson dump;	//判断user是person么
+list user "Test Everything" select isarole dump;	//判断user是role么
+list user "Test Everything" select isagroup dump;	//判断user是组么
+check product license PRG dump; 					//检查license  PRG是否正常
+mod role xxx assign person admin_platform;			//给人员分配xxx角色
+mod role xxx remove assign person admin_platform;	//给人员移除xxx角色
+delete role xxx;									//删除角色
+command
+list command;										//查询所有按钮
+list command CMCS*;									//查询所有CMCS*开头的按钮
+print command PMCProjectMemberTimesheet select user;//查询按钮添加的角色
+mod command PMCProjectMemberTimesheet add user xxx;	//给按钮添加人员或者角色，只有这个角色和人员可以看到
+mod command PMCProjectMemberTimesheet remove user xxx;//给按钮移除人员或者角色
+print command PMCProjectMemberTimesheet select setting;		//查询所有setting名字
+print command PMCProjectMemberTimesheet select setting.*;	//查询所有setting所有信息
+mod command PMCProjectMemberTimesheet add setting "Target Location" content; 	//添加或者修改command的setting
+mod command PMCProjectMemberTimesheet add setting "Access Expression" false;	//隐藏按钮
+mod command PMCProjectMemberTimesheet remove setting "Target Location"; 		//移除command的setting
+menu
+list menu;											//查询所有menu
+list menu CMCS*;									//查询所有CMCS开头的菜单
+print menu IssueToolBar select *;					//查询所有信息
+print menu IssueToolBar select child;				//查询子menu和command
+print menu IssueToolBar select menu;				//查询子menu
+print menu IssueToolBar select command;				//查询子command
+mod menu 'IssueToolBarActions' order command 'MultiObjectTransferOwnership' 3;	//把MultiObjectTransferOwnership按钮调整到IssueToolBarActions菜单的第三个位置
+mod menu IssueToolBarActions add command MultiObjectTransferOwnership 3;		//菜单里面添加按钮，第三个位置
+mod menu IssueToolBarActions add command MultiObjectTransferOwnership;			//菜单里面添加按钮，最后一个位置
+mod menu IssueToolBarActions add menu xxx 1;									//菜单里面添加菜单,第一个位置
+mod menu IssueToolBarActions add menu xxx;										//菜单里面添加菜单
+mod menu IssueToolBarActions remove command xxx;								//移除按钮
+mod menu IssueToolBarActions remove menu xxx;									//移除菜单
+mod menu IssueToolBarActions add setting "Access Expression" false;				//隐藏菜单
+mod menu IssueToolBarActions remove setting "Access Expression";				//取消隐藏菜单
+portal
+list portal;										//查询所有portal
+list portal CMCS*;									//查询所有CMCS开头的portal
+print portal IssuePortal select *;					//查询portal所有信息
+print portal IssuePortal select channel;			//查询portal所有channel
+print portal IssuePortal select place;				//查询portal所有channel的位置信息
+mod portal "CMCSRQuestionPortal"  place "CMCSRQuestionViewInfoChannel" newrow after ""  place "CMCSReferenceDocumentsChannel" after "" place "CMCSRQuestionDocChannel" newrow after ""; //添加的是CMCSRQuestionViewInfoChannel,CMCSReferenceDocumentsChannel | CMCSRQuestionDocChannel的样式的channel
+mod portal CMCSRQuestionPortal remove channel CMCSRQuestionViewInfoChannel; 	//移除channel
+channel
+list channel;																	//查询所有channel
+print channel CMCSRQuestionViewInfoChannel select *;							//查询channel所有信息
+print channel CMCSRQuestionViewInfoChannel select CMCSRQuestionPortal;			//查询channel所属portal
+print channel CMCSRQuestionViewInfoChannel select CMCSRQuestionInfoCommand;		//查询channel下面的所有按钮
+mod channel CMCSRQuestionViewInfoChannel place "CMCSRQuestionInfoCommand" after "";	//channel添加按钮 
+mod channel CMCSRQuestionViewInfoChannel remove command CMCSRQuestionInfoCommand;	//channel里面移除按钮
+tablel
+list table system;														//查询所有table
+list table system CMCS*;												//查询所有CMCS开头的table
+print table CMCSRQuestionTable system select column;					//查询table所有列名字
+print table CMCSRQuestionTable system select column.*;					//查询table所有列详细信息
+print table CMCSRQuestionTable system select column[CMCSDocumentType].*;//查询table中CMCSDocumentType列的详细信息
+mod table "CMCSRQuestionTable" system column mod name "CMCSRCStartRev" add setting "Editable" "false";	//table的CMCSRCStartRev列调整为不可编辑
+mod table "CMCSRQuestionTable" system column mod name "CMCSRCStartRev" remove setting "Editable";		//table列移除setting
+mod table "CMCSRQuestionTable" system column mod name "CMCSRCStartRev" add user admin_platform;			//列添加user可见的权限
+mod table "CMCSRQuestionTable" system column mod name "CMCSRCStartRev" remove user admin_platform;		//列移除user可见的控制
+mod table "CMCSRQuestionTable" system column mod name "name" order "1"  column mod name "Title" order "2";//调整顺序
+mod table "CMCSRQuestionTable" system column delete name "name";		//删除列
+delete table CMCSRQuestionTable system;									//删除table
+form
+list form;																//查询所有form
+list form CMCS*;														//查询所有CMCS开头的form
+print form CMCSRCQuestionCreateForm select *;							//查询form所有信息
+print form CMCSRCQuestionCreateForm select field;						//查询form所有field名字
+print form CMCSRCQuestionCreateForm select field.*;						//查询form所有field信息
+print form CMCSRCQuestionCreateForm select field[CMCSChineseName].*;	//查询form某一个field的所有信息
+mod form CMCSRCQuestionCreateForm field mod name "name" add setting "Access Expression" "false";	//隐藏该field
+mod form CMCSRCQuestionCreateForm field mod name "name" remove setting "Access Expression";			//删除setting
+mod form CMCSRCQuestionCreateForm field mod name "name" order "1"  column mod name "Title" order "2";//调整顺序
+program
+compile progam xxx force;					//强制编译JPO xxx
+exec program xxx -method sss p1 p2 p3;		//执行xxx的sss方法，第一个参数p1 第二个参数p2 第三个参数p3(根据实际情况写几个参数，没有可以不写)
+other
+send mail to admin_platform cc "Test Everything" subject "aa" text "bb";	//给admin_platform发邮件，抄送给Test Everything,标题为aa 内容为bb
+list store;																	//查询所有store
+print store STORE select fcsurl path;										//查看文件服务器的地址和路径
+mod store STORE fcs https://dsplm20x.3ds.com:443/internal; 					//更改文件服务器地址
+mod store STORE path C:/Apps/DassaultSystemes/R2020x/3DSpaceData/STORE; 	//更改文件服务器文件存放位置
+set system searchindex file c:/xxx/config.xml;								//根据文件 重新建索引
+update searchindex type 'CMCSMonthApprovalTask';							//更新索引类型
+export type Issue into file C:/temp/type_Issue;								//导出类型Issue到文件C:/temp/type_Issue(可以是任意一个schema的东西)
+import type * overwrite from file C:/temp/type_Issue;						//导入类型,依据文件C:/temp/type_Issue
+add property attribute_CMCSDRCDesignPhase on program eServiceSchemaVariableMapping.tcl to attribute CMCSDRCDesignPhase; //属性添加注册名
+Spinner插件
+exec prog emxExtractSchema.tcl type Issue;		//导出类型到c:/temp/日期文件夹
+tcl; //进如tcl语言环境
+cd c:/schema			//指定路径（可以是任意一个满足结构的）
+exit		//退出tcl语言环境
+exec program emxSpinnerAgent.tcl force update;								//导入schema
+exec prog emxExtractSchema.tcl table PMCWBSViewTable; 导出
+
+quit 回退上一阶层
+
+BO实例
+实例：businessObject(对象实例),connection(关系实例)；enovia里面确定对象的唯一标识有两个，1:id  2:type(类型)+name(名称)+revision(版本)；所以一个对象要想创建成功必许有type name revision policy vault(存储位置：eService Production)
+
+bus
+add bus type name revision policy xxx vault "eService Production"; 		//添加对象
+delete bus id;															//删除对象
+mod bus id attributeName attributeValue;								//更改属性attributeName 的值为attributeValue
+print bus id select *;													//知道id的查询所有信息
+print bus type name revision select id;									//知道确切的类型 名称 版本查询，不可以写*模糊查询
+print bus id select attribute[xxx].inputvalue attribute[xxx].inputunit; //查询属性值和单位
+print bus id select to[Member].from.name;								//已知对象为to端，通过关系Member查询from端的name
+print bus id select to[Member].id;										//已知对象为to端，查询关系id
+print bus id select to[Member|from.type==Department].from.name;			//已知对象为to端，通过关系Member查询from端的类型为department的from端的name
+expand bus id from rel relName  recurse to all(0,1,2,3,end..) select bus name dump |; //(all 0,1,2,end...写一个)，跟对象和关系名，查找 to端的卷积对象的name
+temp query bus Person * * where "attribute[Last Login Date] != ''" orderby -attribute[Last Login Date] select attribute[Last Login Date] dump; 
+//查询人员(最后登入时间不为空) 按最后登入时间 逆序 展示结果
+revise bus 低版本ID bus 高版本ID;										//添加版本序列
+eval expr "count True" on temp query bus Person * * where "attribute[Last Login Date] != ''";	//查询满足where条件的类型 数量
+eval expr "表达式" on bus id;										//判断表达式在对象上是否为真
+mod bus id grant 角色或者人 access checkin,checkout;				//给bo对象上面，角色或者人 检入检出的权限
+mod bus id revoke grantee 角色或者人; 								//给bo对象上面，移除角色或者人
+connect bus fromid rel relName to toid;								//把fromid toid 两个对象用 relName 关联起来
+disconnect bus  55426.58804.20717.10507  rel  'Assigned Tasks'  to 55426.58804.49163.55913
+delete connection relId;											//删除关系对象
+mod connection relId to id;											//更改关系to端的对象
+mod connection relId from id;										//更改关系from端对象
+temp query bus Person  admin_platform * select id;    
+print bus Person  admin_platform -  select id dump   //查询角色id
+print bus  55426.58804.20717.10507 select from[].to.id;  //to端id
+
+mod command CMCSEquipmentProcurementManagement remove setting "Access Program";
+mod command CMCSEquipmentProcurementManagement remove setting "Access Function";
+mod menu 'My Enovia' order menu 'CMCSDesignTaskManagement' 4;
+	mod menu 'My Enovia' order command 'CMCSAdministrativeShowTasks' 5; 
+	mod menu 'My Enovia' order command 'PMCRiskMyDesk' 6;
+	mod menu 'My Enovia' order menu 'CMCSDocumentManagement' 7;
+	mod menu 'My Enovia' order command 'CMCSDeviceGroupStandingBook' 8;
+	mod menu 'My Enovia' order menu 'CMCSIssueAndChange' 9;
+	mod menu 'My Enovia' order menu 'CMCSProjectReport' 10;
+	mod menu 'My Enovia' order command 'CMCSReferralStandingBookCommand' 11;
+	mod menu 'My Enovia' order command 'IssueListPageForShipOwner' 12;
+	mod menu 'My Enovia' order menu 'CMCSBasicConfiguration' 13;
+	mod menu 'My Enovia' order menu 'CMCSKnowledgeBaseManangement' 14;
+	mod menu 'My Enovia' order command 'AEFIconMailToolbar' 15;
+	
+	mod menu 'My Enovia'
+	//55426.58804.32715.7906
+	
+	disconnect bus  55426.58804.20717.10507  rel  'Assigned Tasks'  to 55426.58804.49163.55913
+	disconnect bus  55426.58804.20717.10507  rel  'Assigned Tasks'  to 55426.58804.32715.7906
+	mod table "APPTaskSummary" system column mod name "RouteContent" add setting "Access Expression" false;	
+	
+	mod table "APPTaskSummary" system column mod name "RouteContent" add setting "Access Expression" false;
+	mod menu  PARMyDesk add setting "Access Expression" false;
+
+  MapList utsList = localChart.getRelatedObjects(context,
+                        "Issue",
+                        typeName,
+                        busSelects,
+                        null,       // relationshipSelects
+                        true,       // getTo
+                        false,      // getFrom
+                        (short) 1,  // recurseToLevel
+                        null,		// objectWhere
+                        null);      // relationshipWhere
+						
+						Access Program
+						
+						
+						command APPWhereUsedHData,APPWhereUsedRData
+						
+						
+						需要以下方式导出导入
+1.export command xxxx into file c:/tmp/command_xxxxx
+2.import command * overwrite from file c:/tmp/command_xxxx;
+导出自己的command
+export command CSSCDownloadWorkspace into file /tmp/command_CSSCDownloadWorkspace
+
+
+print bus 55426.58804.12710.9017 select history  
+
+mod menu 'My Enovia' add  command  CSSCShowOperationlogHistory; 
+mod menu AEFPersonMenu add command AEFReloadCacheToolbar;
+1.将 资源库导入导出代码/cssc/文件夹 复制到3dspace/下;
+2.将 资源库导入导出代码/schema/下的模型导入至系统中;
+
+import command * overwrite from file /tmp/command_CSSCImportLib;dao
+除了导入command 还可以适用于所有模型
+export command 也适用于所有模型
+
+
+导入导出 针对program带转译的
+import program * overwrite from file /tmp/program_CGNPersonnelMonitoring;
+
+export program CGNPersonnelMonitoring into file /tmp/CGNPersonnelMonitoring;
+
+
+compile prog CGNPersonnelMonitoring force update;
+编译program
+ 
+不带转译的
+insert prog /tmp/CSICImportTechnologyKnowledgeLib_mxJPO.java;
+插入.java文件 要加后缀 除了jpo其它无效
+
+extract program CGNPersonnelMonitoring;（） 
+导出到3de安装的文件夹 /usr/DassaultSystemes/R2020x/3DSpace/linux_a64/docs/custom/
+
+ alter system set processes = 300 scope = spfile;
+create table  userTableName( id varchar(45),name varchar(45),loginDate DATE,status varchar(45))
