@@ -275,3 +275,62 @@ extract program CGNPersonnelMonitoring;（）
 
  alter system set processes = 300 scope = spfile;
 create table  userTableName( id varchar(45),name varchar(45),loginDate DATE,status varchar(45))
+
+start searchindex mode FULL;//重建索引
+license查看
+MQL<110>modify Product IFW add Person admin_platform ;
+Person 'admin_platform' successfully added
+Product 'CCM' successfully modified
+
+
+MQL<115>print Person admin_platform select Product;
+person   admin_platform 
+    product = DPJ
+    product = DPM
+    product = CCM
+    product = IFW
+    product = CSV
+
+MQL<119>list role Libr*;
+Librarian
+Library User
+MQL<120>modify role "Library User" assign Person admin_platform;
+Role 'Library User' successfully modified
+MQL<121>modify role Librarian  assign Person admin_platform;
+
+ 
+没有spinner下 需要注册的mql语句
+mod prog eServiceSchemaVariableMapping.tcl add property attribute_CSSCShowRelationship                                 to attribute  CSSCShowRelationship                ;
+mod prog eServiceSchemaVariableMapping.tcl add property type_CSSCShowGeneralInformation                                 to type  CSSCShowGeneralInformation                        ;
+mod prog eServiceSchemaVariableMapping.tcl add property type_CSSCShowSpecialInformation                         to type   CSSCShowSpecialInformation;
+mod prog eServiceSchemaVariableMapping.tcl add property policy_CSSCShowGeneralInformationpolicy                                 to policy  CSSCShowGeneralInformationpolicy                ;
+mod prog eServiceSchemaVariableMapping.tcl add property policy_CSSCShowSpecialInformationpolicy                                 to policy  CSSCShowSpecialInformationpolicy                ;
+
+windows开机查看服务：
+oracle 
+3dSpace Index        ==>running
+配置日志：
+<Context useHttpOnly="false" swallowOutput="true">
+
+自动autoName
+add bus "eService Number Generator" type_CSSCShowGeneralInformation "" policy "eService Object Generator" vault "eService Administration"  "eService Next Number" 000001;
+add bus "eService Object Generator" type_CSSCShowGeneralInformation "" policy "eService Object Generator" vault "eService Administration"  "eService Safety Vault" vault_eServiceAdministration "eService Safety Policy" policy_CSSCShowGeneralInformationpolicy "eService Retry Delay" 60 "eService Retry Count" 5 "eService Processing Time Limit" 60 "eService Name Prefix" Gel-;
+connect bus "eService Number Generator" type_CSSCShowGeneralInformation "" relationship  "eService Number Generator" from "eService Object Generator" type_CSSCShowGeneralInformation "";
+add bus "eService Number Generator" type_CSSCShowSpecialInformation "" policy "eService Object Generator" vault "eService Administration"  "eService Next Number" 000001;
+add bus "eService Object Generator" type_CSSCShowSpecialInformation "" policy "eService Object Generator" vault "eService Administration"  "eService Safety Vault" vault_eServiceAdministration "eService Safety Policy" policy_CSSCShowSpecialInformationpolicy "eService Retry Delay" 60 "eService Retry Count" 5 "eService Processing Time Limit" 60 "eService Name Prefix" Stl-;
+connect bus "eService Number Generator" type_CSSCShowSpecialInformation "" relationship  "eService Number Generator" from "eService Object Generator" type_CSSCShowSpecialInformation "";
+
+
+//调用某一个方法
+exec program CSSCExportLibraries -method ExportLibrary;
+
+
+
+
+重新建立索引
+set context user creator;
+status searchindex;
+stop searchindex;
+clear searchindex;
+start searchindex mode FULL;
+status searchindex;
