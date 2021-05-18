@@ -1,0 +1,116 @@
+判空;
+  if (UIUtil.isNotNullAndNotEmpty(objectId)) {
+
+Framework 截取：
+StringList attributeList = FrameworkUtil.split(ObjectRelatedListId, ",");
+                      Set <String >hs = new HashSet();
+            for (int j = 0; j < attributeList.size(); j++) {
+
+                hs.add((String) attributeList.get(j));
+               }
+
+
+
+
+ String librarys = MqlUtil.mqlCommand(context, "temp query bus CSSCDataSelectionType * * select id dump");
+            StringList libs = FrameworkUtil.split(librarys, "\n");
+
+            if (libs != null && libs.size() > 0) {
+                Iterator it = libs.iterator();
+                while (it.hasNext()) {
+                    String mql = (String) it.next();
+                    if (mql.split(",").length == 4) {
+                        libIds += mql.split(",")[3];
+                    }
+                }
+            }
+            StringList libList = FrameworkUtil.split(libIds, ",");
+判断是否含有该角色：
+
+String accessUsers = "role_OrganizationManager,role_CompanyRepresentative,role_VPLMAdmin,role_CSSCSystemAdministrator";
+if( !PersonUtil.hasAnyAssignment(context, accessUsers) ) {
+	return;
+}
+
+
+java.util.Vector roles = PersonUtil.getUserRoles(context);
+			if (roles.contains("CMCSShipOwner")) {
+
+ 
+ 
+ 
+ 获取maplist里的值
+ 
+   Map map = (Map)mapList.get(i);
+                String type = (String)map.get("type");
+ 权限升级：
+ ContextUtil.pushContext(context);
+ ContextUtil.popContext(context);
+
+ 
+ MapList utsList = localChart.getRelatedObjects(context,
+                        "Issue",
+                        typeName,
+                        busSelects,
+                        null,       // relationshipSelects
+                        true,       // getTo
+                        false,      // getFrom
+                        (short) 1,  // recurseToLevel
+                        null,		// objectWhere
+                        null);      // relationshipWhere
+						
+						//通过id获取实例化对象
+DomainObject dom = DomainObject.newInstance(context,userId);
+DomainObject dom = new DomainObject(sContentId);
+//通过实例化对象获取type名
+String str = dom.getInfo(context,"type");
+//通过实例化对象获取Member关系的from端的name
+String str = dom.getInfo(context,"to[Member].from.name");
+dom.setAttributeValue(context,”attributeName”, “imtest”);//改变自定义属性
+dom.setName(context,”imtestName”);//改变基本属性	
+
+getInfo获取一个或多个对象的信息，包括Basics和Attributes
+findObjects 查到对象，并把满足条件的对象放到一个MapList中
+getRelatedObject 只获取一个关联的对象及关系上的属性
+getRelatedObjects只获取所有关联的对象及关系上的属性
+newInstance (matrix.db.Context context) 返回一个DomainObject对象，此方法比new DomainObject节省资源，提高性能	
+						
+//setting配置
+Registered Suite|Show Type Icon |    Target Location       |    Admin Type          | Editable|  Alternate OID expression
+       CMCS     |     false     | pageHidden/popup/ content| attribute_CMCSPrintUse |  false  |  from[CMCSPrintComplementProjectRel].to.id 
+	   注册模块      是否展示图标   和点击一起用，弹框效果    和range一起用            可编辑    重新规定以谁为中心的id
+	   
+	   
+	   Auto Filter |  function    | program         | Column Type                     |  Sort Type   |    format    | Access Expression
+	        true   |  getDeptName | CMCSMyPrintDept | programHTMLOutput/program       |    date      |    date      |  false
+	左侧过滤是否展示      方法         JPO             和JPO配套用，比program功能强大    日期排序      规定日期格式    设置权限不可见
+	
+	Access Function | Access Program   |     Field Type             |     Submit        |Confirm Message
+	  方法名             JPO名         | attribute/basic/program    |      true         |  汉化
+	设置权限方法         JPO               基础属性或者新增         JSP获取id需要配置   |  弹框
+	
+//读取翻译文件
+for(int j = 0; j < attributeList.size(); j++){
+            String attributeName =(String) attributeList.get(j);
+            String attributeChineseName = EnoviaResourceBundle.getProperty(context,"emxCMCSStringResource",Locale.CHINA,"emxCMCSStringResource.Attribute."+attributeName);
+
+            if(attributeChineseName.contains("\u90E8")||attributeChineseName.equals("\u8239\u4E1C")||attributeChineseName.equals("\u8239\u7ea7\u793e")||attributeChineseName.equals("\u73b0\u573a\u9a8c\u8239\u5e08")){
+                depAttribute +=attributeChineseName+"|";
+
+            }
+        }
+//获取当前用户： String name=context.getUser();
+
+//下拉值对其翻译识别
+ String ps="";
+                StringList ProductionStagelist = FrameworkUtil.getRanges(context, "CMCSProductionStage");
+                System.out.println("ProductionStagelist----------"+ProductionStagelist);
+                StringList accLevelZHList2 = i18nNow.getAttrRangeI18NStringList("CMCSProductionStage", ProductionStagelist, "zh_CN");
+                System.out.println("accLevelZHList2----------"+accLevelZHList2);
+                for(int j=0;j<accLevelZHList2.size();j++){
+                    if(accLevelZHList2.get(j).toString().equals(ProductionStage)){
+                        ps = (String) ProductionStagelist.get(j);
+                    }
+                }
+                System.out.println("ps----------"+ps);
+                Config.setAttributeValue(context, "CMCSProductionStage", ps);
